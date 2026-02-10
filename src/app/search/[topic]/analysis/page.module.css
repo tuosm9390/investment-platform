@@ -1,0 +1,144 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.scoreCard {
+  background: white;
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme='dark'] .scoreCard {
+  background: var(--gray-900);
+  border-color: var(--gray-800);
+}
+
+.scoreInfo {
+  flex: 1;
+}
+
+.label {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin-bottom: var(--spacing-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.sentiment {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: var(--spacing-sm);
+}
+
+.sentiment.bullish {
+  color: var(--success);
+}
+
+.sentiment.bearish {
+  color: var(--danger);
+}
+
+.sentiment.neutral {
+  color: var(--warning);
+}
+
+.scoreDescription {
+  color: var(--gray-600);
+  max-width: 600px;
+}
+
+.scoreCircle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+  border: 8px solid var(--gray-100);
+  color: var(--foreground);
+}
+
+.scoreCircle.bullish {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.scoreCircle.bearish {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.scoreCircle.neutral {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.section {
+  background: white;
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--gray-100);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.listItem {
+  display: flex;
+  gap: var(--spacing-sm);
+  line-height: 1.5;
+}
+
+.bullet {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .section {
+  background-color: var(--gray-50);
+  border-color: var(--gray-200);
+}
+
+[data-theme='dark'] .sectionTitle {
+  border-bottom-color: var(--gray-200);
+}
+
+[data-theme='dark'] .scoreDescription {
+  color: var(--gray-500);
+}

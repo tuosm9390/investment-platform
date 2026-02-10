@@ -1,0 +1,108 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 var(--spacing-xl);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--gray-200);
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme='dark'] .header {
+  background-color: rgba(13, 17, 23, 0.9);
+  border-bottom: 1px solid var(--gray-800);
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.nav {
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.navLink {
+  color: var(--gray-600);
+  font-weight: 500;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.navLink:hover {
+  color: var(--primary-color);
+  background-color: var(--gray-50);
+}
+
+[data-theme='dark'] .navLink:hover {
+  background-color: var(--gray-800);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.searchInput {
+  width: 0;
+  opacity: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  background: var(--background);
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  color: var(--foreground);
+}
+
+.searchInput.open {
+  width: 200px;
+  opacity: 1;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--primary-color);
+  margin-right: var(--spacing-sm);
+  background-color: var(--gray-50);
+  border-radius: var(--radius-md);
+}
+
+[data-theme='dark'] .searchInput.open {
+  background-color: var(--gray-100);
+  border-color: var(--primary-color);
+}
+
+.iconButton {
+  padding: var(--spacing-sm);
+  color: var(--gray-500);
+  border-radius: var(--radius-full);
+  transition: all 0.2s;
+}
+
+.iconButton:hover {
+  color: var(--foreground);
+  background-color: var(--gray-100);
+}
+
+/* Dark Mode Icon Buttons */
+[data-theme='dark'] .iconButton {
+  color: var(--gray-400);
+}
+
+[data-theme='dark'] .iconButton:hover {
+  color: var(--foreground);
+  background-color: var(--gray-200);
+}
+
+[data-theme='dark'] .navLink {
+  color: var(--gray-500);
+}

@@ -1,66 +1,33 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from 'next/link';
+import SearchBar from '@/components/SearchBar';
+import styles from './page.module.css';
+import { ResearchSection } from '@/components/research/ResearchSection';
 
 export default function Home() {
+  const popularTags = ['비트코인', '삼성전자', '테슬라', '이더리움', 'S&P 500', '엔비디아'];
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className={styles.container}>
+      <h1 className={styles.title}>
+        투자의 모든 것, Invesight
+      </h1>
+      <p className={styles.subtitle}>
+        주식부터 암호화폐까지, AI가 분석한 최신 투자 정보를 한눈에 확인하세요.
+      </p>
+
+      <div className={styles.searchWrapper}>
+        <SearchBar />
+
+        <div className={styles.tags}>
+          {popularTags.map((tag) => (
+            <Link key={tag} href={`/search/${encodeURIComponent(tag)}`} className={styles.tag}>
+              #{tag}
+            </Link>
+          ))}
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
+
+      <ResearchSection />
     </div>
   );
 }

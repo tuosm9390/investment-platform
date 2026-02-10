@@ -1,0 +1,48 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: var(--spacing-md);
+  text-transform: capitalize;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--spacing-md);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.tab {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-weight: 500;
+  color: var(--gray-500);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: var(--foreground);
+}
+
+.tab.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .tabs {
+  border-bottom-color: var(--gray-200);
+}
+
+[data-theme='dark'] .tab:hover {
+  color: var(--gray-700);
+}

@@ -1,0 +1,48 @@
+.card {
+  background: linear-gradient(135deg, var(--gray-900), var(--gray-800));
+  color: white;
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  color: var(--warning);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.aiBadge {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  color: var(--primary-light, #80bfff);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-sm);
+}
+
+.summary {
+  color: var(--gray-300);
+  line-height: 1.6;
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .card {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 1px solid var(--gray-200);
+}
+
+[data-theme='dark'] .summary {
+  color: #e0e0e0;
+}

@@ -1,0 +1,169 @@
+.controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-md);
+}
+
+.viewToggle {
+  display: flex;
+  background-color: var(--gray-100);
+  padding: 4px;
+  border-radius: var(--radius-md);
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  color: var(--gray-500);
+}
+
+.toggleButton.active {
+  background-color: white;
+  color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* List View */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.list .card {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background-color: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s;
+}
+
+.list .card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+}
+
+.list .imageWrapper {
+  flex-shrink: 0;
+  width: 200px;
+  height: 140px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--gray-100);
+}
+
+.list .image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.list .content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Grid View */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.grid .card {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.grid .card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.grid .imageWrapper {
+  width: 100%;
+  height: 180px;
+  background-color: var(--gray-100);
+}
+
+.grid .image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grid .content {
+  padding: var(--spacing-lg);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Common Card Styles */
+.meta {
+  display: flex;
+  gap: var(--spacing-sm);
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin-bottom: var(--spacing-xs);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.4;
+}
+
+.summary {
+  color: var(--gray-600);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: var(--spacing-md);
+}
+
+.readMore {
+  margin-top: auto;
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .toggleButton.active {
+  background-color: var(--gray-100);
+  color: var(--primary-color);
+}
+
+[data-theme='dark'] .list .card,
+[data-theme='dark'] .grid .card {
+  background-color: var(--gray-50);
+  border-color: var(--gray-200);
+}
+
+[data-theme='dark'] .list .card:hover {
+  border-color: var(--primary-color);
+}
+
+[data-theme='dark'] .title {
+  color: var(--foreground);
+}
+
+[data-theme='dark'] .summary {
+  color: var(--gray-500);
+}

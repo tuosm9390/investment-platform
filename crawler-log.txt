@@ -1,0 +1,10 @@
+"Testing crawler with keyword \"비트코인\"..."
+"Results count:" 12
+"First item:" {
+  "id": "google-rss-0",
+  "title": "빗썸 비트코인 오지급 사건…돌려주지 않으면 무슨 일 생길까",
+  "source": "지디넷코리아",
+  "date": "2026. 02. 09.",
+  "summary": "빗썸 비트코인 오지급 사건…돌려주지 않으면 무슨 일 생길까  지디넷코리아‘62조원 오지급’ 빗썸, 비트코인 1788개 매입해 장부 맞춰 - 조선비즈  Chosunbiz국회 정무위,...",
+  "url": "https://news.google.com/rss/articles/CBMiVkFVX3lxTE5lT2piOXdOOXp6S1ZQS2FtSFM2VmpXb1lWam15TnRhSXRweG9Yc2xRYXI5WHRWdkQzRGl1dG5Nd3FuNFlqcVp0d2F0Sno0bGZQdk5seHNn?oc=5"
+}
