@@ -21,7 +21,7 @@ async function test() {
     fs.writeFileSync('naver-search.html', response.data);
     console.log('Saved HTML to naver-search.html');
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed:', error.message);
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import Image from 'next/image';
 import { PriceData, StockPriceData, getTradingViewSymbol, BINANCE_WS_URL, KRW_RATE, FilterType, filterCryptoData } from '@/lib/prices';
 import styles from './page.module.css';
 import { AIPredictionTab } from '@/components/AIPredictionTab';
@@ -11,6 +12,18 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: 'gainers', label: '상승률 상위' },
   { value: 'losers', label: '하락률 상위' },
 ];
+
+interface BinanceMiniTicker {
+  e: string; // Event type
+  E: number; // Event time
+  s: string; // Symbol
+  c: string; // Close price
+  o: string; // Open price
+  h: string; // High price
+  l: string; // Low price
+  v: string; // Total traded base asset volume
+  q: string; // Total traded quote asset volume
+}
 
 export default function PricesPage() {
   const [allCryptoPrices, setAllCryptoPrices] = useState<PriceData[]>([]);
@@ -61,8 +74,9 @@ export default function PricesPage() {
         setError(null);
         setIsLoading(false);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       if (isMounted.current) {
+        console.error('Initial data fetch error:', err); // Explicitly use err
         setError('초기 데이터 로딩 실패');
         setIsLoading(false);
       }
@@ -95,11 +109,11 @@ export default function PricesPage() {
         if (!isMounted.current) return;
 
         try {
-          const data = JSON.parse(event.data);
+          const data: BinanceMiniTicker[] = JSON.parse(event.data);
 
           if (Array.isArray(data)) {
             setAllCryptoPrices((prevPrices) => {
-              const priceMap = new Map(data.map((t: any) => [t.s, t]));
+              const priceMap = new Map(data.map((t) => [t.s, t]));
 
               return prevPrices.map((crypto) => {
                 const symbol = crypto.symbol.toUpperCase() + 'USDT';
@@ -307,11 +321,12 @@ export default function PricesPage() {
                       <td className={styles.rankCell}>{index + 1}</td>
                       <td className={styles.nameCell}>
                         <span className={styles.coinIconWrapper}>
-                          <img
+                          <Image
                             src={`https://assets.coincap.io/assets/icons/${item.symbol}@2x.png`}
-                            alt=""
+                            alt={`${item.name} icon`}
+                            width={24}
+                            height={24}
                             className={styles.coinIcon}
-                            onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
                           />
                         </span>
                         {item.name}

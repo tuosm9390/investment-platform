@@ -28,8 +28,12 @@ async function test() {
       }
     });
 
-  } catch (error: any) {
-    console.error('Failed:', error.message);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+        console.error('Failed:', error.message);
+    } else {
+        console.error('Failed:', error);
+    }
   }
 }
 

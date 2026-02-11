@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Sparkles, Bot } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import styles from './SummaryCard.module.css';
 import { NewsItem } from '@/lib/crawler';
 
@@ -27,7 +26,7 @@ export default function SummaryCard({ topic, news = [] }: SummaryCardProps) {
         <span>AI 인사이트 • 실시간 분석</span>
       </div>
       <h2 className={styles.title}>
-        "{topic}" 시장 브리핑
+        &quot;{topic}&quot; 시장 브리핑
       </h2>
       <div className={styles.summary}>
         {fullText}

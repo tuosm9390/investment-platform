@@ -1,22 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, BookOpen, Trash2, Play, Pause } from 'lucide-react';
 import { UploadResearch } from './UploadResearch';
 import { getResearchList, deleteResearch, ResearchData } from '@/lib/api/research-api';
 
+// Helper function to get initial research list
+function getInitialResearchList(): ResearchData[] {
+  return getResearchList();
+}
+
 export const ResearchSection = () => {
-  const [researchList, setResearchList] = useState<ResearchData[]>([]);
+  const [researchList, setResearchList] = useState<ResearchData[]>(getInitialResearchList); // Lazy initialization
   const [showUpload, setShowUpload] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
 
   const loadResearch = () => {
     setResearchList(getResearchList());
   };
-
-  useEffect(() => {
-    loadResearch();
-  }, []);
 
   const handleDelete = (id: string) => {
     if (confirm('이 연구 자료를 삭제하시겠습니까?')) {

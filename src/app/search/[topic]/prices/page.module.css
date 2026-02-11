@@ -392,3 +392,334 @@
   text-align: center;
   margin-top: var(--spacing-md);
 }
+
+/* Main Navigation Tabs */
+.mainTabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--gray-100);
+  padding-bottom: 2px;
+}
+
+[data-theme='dark'] .mainTabs {
+  border-bottom-color: var(--gray-200);
+}
+
+.mainTab {
+  padding: var(--spacing-sm) var(--spacing-xl);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-400);
+  transition: all 0.2s;
+  position: relative;
+  background: none;
+  cursor: pointer;
+}
+
+.mainTab:hover {
+  color: var(--foreground);
+}
+
+.mainTabActive {
+  color: var(--primary-color);
+}
+
+.mainTabActive::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: var(--primary-color);
+  border-radius: 999px;
+}
+
+[data-theme='dark'] .mainTab {
+  color: var(--gray-600);
+}
+
+[data-theme='dark'] .mainTab:hover {
+  color: white;
+}
+
+/* AI Prediction Tab Styles - Minimal & Modern Refactoring */
+.aiPredictionContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  color: var(--foreground);
+}
+
+.regenerationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.lastUpdateText {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}
+
+.predictionCard {
+  background-color: var(--background);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  padding: var(--spacing-lg);
+  box-shadow: none;
+}
+
+[data-theme='dark'] .predictionCard {
+  background-color: var(--gray-50);
+  border-color: var(--gray-200);
+}
+
+.summarySection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .summarySection {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+  }
+}
+
+.recommendationBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.trendBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  width: fit-content;
+}
+
+.bullishBadge {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.bearishBadge {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+[data-theme='dark'] .bullishBadge {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+[data-theme='dark'] .bearishBadge {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.recommendationText {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: var(--spacing-xs) 0;
+}
+
+.chartContainer {
+  height: 200px;
+  width: 100%;
+  position: relative;
+  min-height: 200px;
+}
+
+.insightList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insightItem {
+  display: flex;
+  gap: var(--spacing-sm);
+  line-height: 1.5;
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.insightIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary-color);
+  opacity: 0.7;
+}
+
+.technicalGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--gray-100);
+}
+
+@media (max-width: 640px) {
+  .technicalGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.technicalItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.technicalLabel {
+  font-size: 0.7rem;
+  color: var(--gray-400);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.technicalValue {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--foreground);
+}
+
+.priceContainer {
+  display: flex;
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-md);
+}
+
+.priceItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.priceLabel {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  margin-bottom: 2px;
+}
+
+.priceValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.landingContainer {
+  padding: 3rem 2rem;
+  text-align: center;
+  background-color: var(--gray-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.iconCircle {
+  width: 4rem;
+  height: 4rem;
+  background-color: var(--background);
+  color: var(--primary-color);
+  border: 1px solid var(--gray-200);
+  border-radius: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.primaryButton {
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius-md);
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.secondaryButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--background);
+  border: 1px solid var(--gray-200);
+  color: var(--gray-500);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--gray-300);
+  color: var(--foreground);
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: var(--background);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-xl);
+}
+
+.primaryInput {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+  background-color: var(--background);
+  color: var(--foreground);
+  margin-bottom: var(--spacing-md);
+  font-size: 1rem;
+}
+
+.detailChartContainer {
+  height: 240px;
+  width: 100%;
+  margin-top: var(--spacing-md);
+}

@@ -10,11 +10,11 @@ export default function Header() {
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light'); // Initialize with a default value
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Check system preference or saved theme
+    // This effect runs only on the client side after hydration
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -25,7 +25,7 @@ export default function Header() {
       setTheme('light');
       document.documentElement.setAttribute('data-theme', 'light');
     }
-  }, []);
+  }, []); // Empty dependency array means it runs once on mount
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';

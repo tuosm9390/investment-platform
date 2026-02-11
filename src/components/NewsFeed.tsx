@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { LayoutGrid, List as ListIcon } from 'lucide-react';
 import type { NewsItem } from '@/data/mockData';
 import styles from './NewsFeed.module.css';
@@ -38,8 +39,7 @@ export default function NewsFeed({ news }: NewsFeedProps) {
           <article key={item.id} className={styles.card}>
             {item.imageUrl && (
               <div className={styles.imageWrapper}>
-                {/* In a real app, use Next.js Image component */}
-                <img src={item.imageUrl} alt="" className={styles.image} />
+                <Image src={item.imageUrl} alt="News thumbnail" width={200} height={120} className={styles.image} />
               </div>
             )}
             <div className={styles.content}>

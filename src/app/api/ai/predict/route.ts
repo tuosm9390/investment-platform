@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { calculateRSI, calculateMACD, calculateSMA, calculateEMA } from '@/lib/indicators';
+import { calculateRSI, calculateMACD, calculateEMA } from '@/lib/indicators';
 
 const BINANCE_BASE_URL = 'https://api.binance.com/api/v3';
 
-async function fetchOHLCV(symbol: string, interval: string, limit: number = 100) {
+interface OHLCVData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+async function fetchOHLCV(symbol: string, interval: string, limit: number = 100): Promise<OHLCVData[]> {
   const response = await axios.get(`${BINANCE_BASE_URL}/klines`, {
     params: {
       symbol: symbol.toUpperCase() + 'USDT',
@@ -14,13 +23,13 @@ async function fetchOHLCV(symbol: string, interval: string, limit: number = 100)
     },
   });
 
-  return response.data.map((k: any) => ({
-    time: k[0],
-    open: parseFloat(k[1]),
-    high: parseFloat(k[2]),
-    low: parseFloat(k[3]),
-    close: parseFloat(k[4]),
-    volume: parseFloat(k[5]),
+  return response.data.map((k: (string | number)[]) => ({
+    time: k[0] as number,
+    open: parseFloat(k[1] as string),
+    high: parseFloat(k[2] as string),
+    low: parseFloat(k[3] as string),
+    close: parseFloat(k[4] as string),
+    volume: parseFloat(k[5] as string),
   }));
 }
 
@@ -35,8 +44,8 @@ export async function GET(request: NextRequest) {
       fetchOHLCV(symbol, '4h', 50),
     ]);
 
-    const dailyCloses = dailyData.map((d: any) => d.close);
-    const fourHourCloses = fourHourData.map((d: any) => d.close);
+    const dailyCloses = dailyData.map((d) => d.close);
+    const fourHourCloses = fourHourData.map((d) => d.close);
 
     // 2. Calculate Indicators
     const dailyRSI = calculateRSI(dailyCloses);
@@ -59,7 +68,10 @@ export async function GET(request: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel(
+      { model: 'gemini-flash-latest' },
+      { apiVersion: 'v1beta' }
+    );
 
     const prompt = `
       Analyze the ${symbol} coin for investment purposes. 
@@ -110,7 +122,7 @@ export async function GET(request: NextRequest) {
       ai: analysis
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('AI Prediction error:', error);
     return NextResponse.json({ error: 'FAILED_TO_ANALYZE', message: error.message }, { status: 500 });
   }

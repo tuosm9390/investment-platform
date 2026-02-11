@@ -3,7 +3,7 @@ import { getCryptoPrices, getStockPrices, PriceData, StockPriceData } from '@/li
 
 // Server-side cache to reduce API calls
 let cachedCrypto: PriceData[] = [];
-let cachedStocks: StockPriceData[] = getStockPrices();
+const cachedStocks: StockPriceData[] = getStockPrices();
 let lastFetchTime: number = 0;
 const CACHE_DURATION = 15000; // 15 seconds cache (CoinCap has generous limits)
 

@@ -3,7 +3,7 @@ import * as fs from 'fs';
 
 async function test() {
   const logs: string[] = [];
-  const log = (...args: any[]) => {
+  const log = (...args: unknown[]) => {
     console.log(...args);
     logs.push(args.map(a => JSON.stringify(a, null, 2)).join(' '));
   };
@@ -18,8 +18,12 @@ async function test() {
     } else {
       log('No results found.');
     }
-  } catch (e: any) {
-    log('Error:', e.message);
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+        log('Error:', e.message);
+    } else {
+        log('Error:', e);
+    }
   }
 
   fs.writeFileSync('crawler-log.txt', logs.join('\n'));

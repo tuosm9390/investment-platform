@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Upload, FileText, Music, Check, X } from 'lucide-react';
+import { Upload, Music, X } from 'lucide-react';
 import { saveResearch } from '@/lib/api/research-api';
 
 interface UploadResearchProps {

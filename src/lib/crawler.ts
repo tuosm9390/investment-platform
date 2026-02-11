@@ -69,7 +69,7 @@ export async function crawlNews(topic: string): Promise<NewsItem[]> {
     console.log(`Crawled ${newsItems.length} items from Google News RSS`);
     return newsItems;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('RSS Crawling failed:', error.message);
     return [];
   }

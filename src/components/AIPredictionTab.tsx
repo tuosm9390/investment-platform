@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Brain, TrendingUp, TrendingDown, Info, Target, AlertCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Brain, TrendingUp, TrendingDown, Info, AlertCircle, RefreshCw, BarChart3, LineChart as ChartIcon } from 'lucide-react';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
+import * as LightweightCharts from 'lightweight-charts';
 import styles from '../app/search/[topic]/prices/page.module.css';
 
 interface AIPredictionProps {
@@ -23,14 +25,333 @@ interface PredictionData {
     stopLoss: number;
     confidence: number;
   };
+  timestamp: number;
 }
+
+const CACHE_KEY = 'ai_prediction_cache';
+const USAGE_KEY = 'ai_prediction_usage';
+
+interface OHLCVData {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number;
+}
+
+// Custom AI Chart Component using Lightweight Charts
+const AICustomChart = ({
+  symbol,
+  targetPrice,
+  stopLoss
+}: {
+  symbol: string,
+  targetPrice: number,
+  stopLoss: number
+}) => {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<LightweightCharts.IChartApi | null>(null);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = LightweightCharts.createChart(chartContainerRef.current, {
+      layout: {
+        background: { type: LightweightCharts.ColorType.Solid, color: 'transparent' },
+        textColor: '#6e7681',
+      },
+      grid: {
+        vertLines: { color: 'rgba(48, 54, 61, 0.3)' },
+        horzLines: { color: 'rgba(48, 54, 61, 0.3)' },
+      },
+      autoSize: true,
+      timeScale: {
+        borderColor: 'rgba(48, 54, 61, 0.5)',
+        timeVisible: true,
+      },
+    });
+
+    // --- Pane 0: Price & SMA ---
+    const candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+      upColor: '#26a69a',
+      downColor: '#ef5350',
+      borderVisible: false,
+      wickUpColor: '#26a69a',
+      wickDownColor: '#ef5350',
+    }, 0);
+
+    // Initialize ICT Markers Plugin for V5
+    const markersPlugin = LightweightCharts.createSeriesMarkers(candlestickSeries);
+
+    // --- Pane 1: RSI ---
+    const rsiSeries = chart.addSeries(LightweightCharts.LineSeries, {
+      color: '#9c27b0',
+      lineWidth: 2,
+      title: 'RSI(14)',
+    }, 1);
+
+    // Add RSI levels
+    rsiSeries.createPriceLine({
+      price: 70,
+      color: 'rgba(156, 39, 176, 0.4)',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'Overbought',
+    });
+
+    rsiSeries.createPriceLine({
+      price: 30,
+      color: 'rgba(156, 39, 176, 0.4)',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'Oversold',
+    });
+
+    // --- Pane 2: MACD ---
+    const macdHistogramSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
+      color: '#26a69a',
+      title: 'MACD Hist',
+    }, 2);
+
+    const macdLineSeries = chart.addSeries(LightweightCharts.LineSeries, {
+      color: '#2962FF',
+      lineWidth: 1,
+      title: 'MACD',
+    }, 2);
+
+    const macdSignalSeries = chart.addSeries(LightweightCharts.LineSeries, {
+      color: '#FF6D00',
+      lineWidth: 1,
+      title: 'Signal',
+    }, 2);
+
+    // Indicator Calculators
+    const calculateRSI = (data: OHLCVData[], period = 14) => {
+      const results: { time: number; value: number }[] = [];
+      let gains = 0;
+      let losses = 0;
+
+      for (let i = 1; i < data.length; i++) {
+        const change = data[i].close - data[i - 1].close;
+        const gain = change > 0 ? change : 0;
+        const loss = change < 0 ? -change : 0;
+
+        if (i <= period) {
+          gains += gain;
+          losses += loss;
+          if (i === period) {
+            const rs = gains / losses;
+            results.push({ time: data[i].time, value: 100 - (100 / (1 + rs)) });
+          }
+        } else {
+          const avgGain = (gains * (period - 1) + gain) / period;
+          const avgLoss = (losses * (period - 1) + loss) / period;
+          gains = avgGain;
+          losses = avgLoss;
+          const rs = gains / losses;
+          results.push({ time: data[i].time, value: 100 - (100 / (1 + rs)) });
+        }
+      }
+      return results;
+    };
+
+    const calculateEMA = (data: OHLCVData[], period: number) => {
+      const k = 2 / (period + 1);
+      let ema = data[0].close;
+      const results: { time: number; value: number }[] = [];
+      for (let i = 0; i < data.length; i++) {
+        const val = data[i].close;
+        ema = val * k + ema * (1 - k);
+        results.push({ time: data[i].time, value: ema });
+      }
+      return results;
+    };
+
+    // --- ICT Pattern Detection ---
+    const detectFVG = (data: OHLCVData[]) => {
+      const fvgs: { top: number; bottom: number; time: number; type: 'Bullish' | 'Bearish' }[] = [];
+      for (let i = 2; i < data.length; i++) {
+        if (data[i - 2].high < data[i].low) {
+          fvgs.push({
+            top: data[i].low,
+            bottom: data[i - 2].high,
+            time: data[i - 1].time,
+            type: 'Bullish'
+          });
+        } else if (data[i - 2].low > data[i].high) {
+          fvgs.push({
+            top: data[i - 2].low,
+            bottom: data[i].high,
+            time: data[i - 1].time,
+            type: 'Bearish'
+          });
+        }
+      }
+      return fvgs;
+    };
+
+    const detectSweeps = (data: OHLCVData[]) => {
+      const markers: LightweightCharts.SeriesMarker<LightweightCharts.Time>[] = [];
+      const period = 20;
+      for (let i = period; i < data.length; i++) {
+        const slice = data.slice(i - period, i);
+        const highest = Math.max(...slice.map(d => d.high));
+        const lowest = Math.min(...slice.map(d => d.low));
+
+        if (data[i].high > highest && data[i].close < highest) {
+          markers.push({
+            time: data[i].time,
+            position: 'aboveBar',
+            color: '#ef5350',
+            shape: 'arrowDown',
+            text: 'Sweep High'
+          });
+        } else if (data[i].low < lowest && data[i].close > lowest) {
+          markers.push({
+            time: data[i].time,
+            position: 'belowBar',
+            color: '#26a69a',
+            shape: 'arrowUp',
+            text: 'Sweep Low'
+          });
+        }
+      }
+      return markers;
+    };
+
+    const fetchKlines = async () => {
+      try {
+        const binanceSymbol = symbol.toUpperCase().replace('USDT', '') + 'USDT';
+        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=4h&limit=150`);
+        const klinesData = await response.json();
+
+        const formattedData: OHLCVData[] = klinesData.map((d: (string | number)[]) => ({
+          time: (d[0] as number) / 1000,
+          open: parseFloat(d[1] as string),
+          high: parseFloat(d[2] as string),
+          low: parseFloat(d[3] as string),
+          close: parseFloat(d[4] as string),
+          volume: parseFloat(d[5] as string),
+        }));
+
+        candlestickSeries.setData(formattedData);
+
+        // RSI 14
+        const rsiData = calculateRSI(formattedData, 14);
+        rsiSeries.setData(rsiData);
+
+        // MACD (12, 26, 9)
+        const ema12 = calculateEMA(formattedData, 12);
+        const ema26 = calculateEMA(formattedData, 26);
+        const macdLineData = ema12.map((d, i) => ({
+          time: d.time,
+          value: d.value - ema26[i].value
+        }));
+        const signalLineData = calculateEMA(macdLineData.map(d => ({time: d.time, close: d.value}) as OHLCVData), 9); // Type assertion for calculateEMA
+        const histogramData = macdLineData.map((d) => {
+          const signal = signalLineData.find(s => s.time === d.time);
+          if (!signal) return null;
+          const value = d.value - signal.value;
+          return {
+            time: d.time,
+            value,
+            color: value >= 0 ? '#26a69a' : '#ef5350'
+          };
+        }).filter((d): d is { time: number; value: number; color: string } => d !== null);
+
+        macdLineSeries.setData(macdLineData);
+        macdSignalSeries.setData(signalLineData);
+        macdHistogramSeries.setData(histogramData);
+
+
+
+
+
+
+
+        // Target/Stop Loss Lines
+        candlestickSeries.createPriceLine({
+          price: targetPrice, color: '#22c55e', lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: 'Target',
+        });
+        candlestickSeries.createPriceLine({
+          price: stopLoss, color: '#ef4444', lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Stop Loss',
+        });
+
+        chart.timeScale().fitContent();
+
+      } catch (err: unknown) {
+        console.error('Failed to fetch indicators:', err);
+      }
+    };
+
+    fetchKlines();
+    chartRef.current = chart;
+
+    return () => {
+      chart.remove();
+    };
+  }, [symbol, targetPrice, stopLoss]);
+
+  return <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />;
+};
 
 export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
   const [data, setData] = useState<PredictionData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [usage, setUsage] = useState({ count: 0, date: '', emailRegistered: false });
+
+  useEffect(() => {
+    setData(null);
+    setError(null);
+    setLoading(true);
+
+    const savedUsage = localStorage.getItem(USAGE_KEY);
+    const today = new Date().toISOString().split('T')[0];
+
+    if (savedUsage) {
+      const parsed = JSON.parse(savedUsage);
+      if (parsed.date === today) {
+        setUsage(parsed);
+      } else {
+        const newUsage = { ...parsed, count: 0, date: today };
+        setUsage(newUsage);
+        localStorage.setItem(USAGE_KEY, JSON.stringify(newUsage));
+      }
+    } else {
+      const initialUsage = { count: 0, date: today, emailRegistered: false };
+      setUsage(initialUsage);
+      localStorage.setItem(USAGE_KEY, JSON.stringify(initialUsage));
+    }
+
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const parsedCache = JSON.parse(cached);
+      if (parsedCache[symbol]) {
+        setData(parsedCache[symbol]);
+        setLoading(false);
+        return;
+      }
+    }
+    setLoading(false);
+  }, [symbol]);
 
   const fetchPrediction = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const currentUsage = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+
+    if (!currentUsage.emailRegistered && currentUsage.count >= 3 && currentUsage.date === today) {
+      setShowEmailModal(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -38,136 +359,200 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
       const result = await res.json();
 
       if (result.error === 'API_KEY_REQUIRED') {
-        setError('API 키 설정이 필요합니다. .env.local 파일을 확인해 주세요.');
+        setError('API 키 설정이 필요합니다.');
       } else if (result.error) {
         setError(result.message || '분석 중 오류가 발생했습니다.');
       } else {
-        setData(result);
+        const newData = { ...result, timestamp: Date.now() };
+        setData(newData);
+
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+        cached[symbol] = newData;
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
+
+        const savedUsage = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+        const newUsage = { ...savedUsage, count: (savedUsage.count || 0) + 1 };
+        setUsage(newUsage);
+        localStorage.setItem(USAGE_KEY, JSON.stringify(newUsage));
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error('AI Prediction fetch error:', err); // Log the error
       setError('네트워크 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    const newUsage = { ...usage, emailRegistered: true };
+    setUsage(newUsage);
+    localStorage.setItem(USAGE_KEY, JSON.stringify(newUsage));
+    setShowEmailModal(false);
     fetchPrediction();
-  }, [symbol]);
+  };
 
-  if (loading) {
+  if (loading && !data) {
     return (
-      <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <RefreshCw size={32} className={styles.spinner} style={{ marginBottom: '1rem', color: 'var(--primary-600)' }} />
-        <p>AI가 차트 지표와 ICT 패턴을 분석 중입니다...</p>
+      <div className={styles.loading} style={{ padding: '4rem 1rem', minHeight: '300px' }}>
+        <RefreshCw size={36} className={styles.spinner} style={{ color: 'var(--primary-color)', marginBottom: '1rem' }} />
+        <p style={{ color: 'var(--gray-500)', fontSize: '0.9375rem' }}>AI가 데이터를 분석하고 있습니다...</p>
       </div>
     );
   }
 
-  if (error) {
+  if (!loading && !data && !error) {
     return (
-      <div style={{ padding: '3rem', textAlign: 'center', backgroundColor: 'var(--red-50)', borderRadius: '1rem' }}>
-        <AlertCircle size={32} color="var(--red-600)" style={{ marginBottom: '1rem' }} />
-        <p style={{ color: 'var(--red-700)', fontWeight: 600 }}>{error}</p>
-        <button onClick={fetchPrediction} className={styles.retryButton} style={{ marginTop: '1rem' }}>다시 시도</button>
+      <div className={styles.landingContainer}>
+        <div className={styles.iconCircle}>
+          <Brain size={32} />
+        </div>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--foreground)', marginBottom: '0.5rem' }}>
+          {symbol} AI 예측 시작
+        </h3>
+        <p style={{ color: 'var(--gray-500)', maxWidth: '360px', lineHeight: 1.5, fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+          차트 패턴과 기술 지표를 종합 분석하여<br />
+          AI가 매매 비중과 목표가를 산출합니다.
+        </p>
+        <button onClick={() => fetchPrediction()} className={styles.primaryButton}>
+          분석 시작하기
+        </button>
       </div>
     );
   }
 
-  const isBullish = data?.ai.trend === 'Bullish' || data?.ai.trend.toLowerCase().includes('bull');
+  const isBullish = !!(data?.ai.trend === 'Bullish' || data?.ai.trend?.toLowerCase().includes('bull'));
+
+  // Data for Radar Chart (Upper)
+  const radarData = data ? [
+    { subject: 'RSI (1D)', A: data.technical.daily.rsi, fullMark: 100 },
+    { subject: 'RSI (4H)', A: data.technical.fourHour.rsi, fullMark: 100 },
+    { subject: 'Confidence', A: data.ai.confidence * 100, fullMark: 100 },
+    { subject: 'Trend Strength', A: isBullish ? 80 : 30, fullMark: 100 },
+  ] : [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* AI Summary Header */}
-      <div style={{
-        background: isBullish ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' : 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
-        padding: '2rem',
-        borderRadius: '1.5rem',
-        border: `1px solid ${isBullish ? '#bfdbfe' : '#fecaca'}`,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <Brain size={24} color="var(--primary-600)" />
-            <span style={{ fontWeight: 600, color: 'var(--primary-700)', fontSize: '0.875rem' }}>AI 종합 분석 결과</span>
-          </div>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: isBullish ? '#1e40af' : '#991b1b', marginBottom: '0.25rem' }}>
-            {data?.ai.recommendation}
-          </h2>
-          <p style={{ color: isBullish ? '#3b82f6' : '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            {isBullish ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-            {data?.ai.trend} Trend
-          </p>
+    <div className={styles.aiPredictionContainer}>
+      <div className={styles.regenerationHeader}>
+        <div className={styles.lastUpdateText}>
+          {data && `업데이트: ${new Date(data.timestamp).toLocaleTimeString()}`}
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.875rem', color: 'var(--gray-500)', marginBottom: '0.25rem' }}>AI 신뢰도</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--gray-900)' }}>{(data!.ai.confidence * 100).toFixed(0)}%</div>
-        </div>
+        <button onClick={() => fetchPrediction()} disabled={loading} className={styles.secondaryButton}>
+          <RefreshCw size={12} className={loading ? styles.spinner : ''} />
+          새로고침
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-        {/* Insights List */}
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--gray-200)' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Info size={20} color="var(--primary-500)" />
-            AI 인사이트
-          </h3>
-          <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingLeft: '1.25rem' }}>
-            {data?.ai.insights.map((insight, i) => (
-              <li key={i} style={{ color: 'var(--gray-700)', lineHeight: 1.5 }}>{insight}</li>
-            ))}
-          </ul>
+      {error ? (
+        <div className={styles.predictionCard} style={{ textAlign: 'center', borderColor: 'var(--danger-200)' }}>
+          <AlertCircle size={32} color="var(--danger)" style={{ marginBottom: '1rem' }} />
+          <p style={{ color: 'var(--danger)', fontWeight: 600 }}>{error}</p>
+          <button onClick={() => fetchPrediction(true)} className={styles.primaryButton} style={{ marginTop: '1rem' }}>재시도</button>
         </div>
+      ) : data ? (
+        <>
+          <div className={styles.predictionCard}>
+            <div className={styles.summarySection}>
+              <div className={styles.recommendationBox}>
+                <div className={`${styles.trendBadge} ${isBullish ? styles.bullishBadge : styles.bearishBadge}`}>
+                  {isBullish ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {data.ai.trend}
+                </div>
+                <h2 className={styles.recommendationText}>{data.ai.recommendation}</h2>
+                <div className={styles.priceContainer}>
+                  <div className={styles.priceItem}>
+                    <span className={styles.priceLabel}>Target</span>
+                    <span className={styles.priceValue} style={{ color: 'var(--success)' }}>${data.ai.targetPrice.toLocaleString()}</span>
+                  </div>
+                  <div className={styles.priceItem}>
+                    <span className={styles.priceLabel}>Stop Loss</span>
+                    <span className={styles.priceValue} style={{ color: 'var(--danger)' }}>${data.ai.stopLoss.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
 
-        {/* Target & Technicals */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--gray-200)', display: 'flex', justifyContent: 'space-around' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center', color: 'var(--green-600)', fontWeight: 600, marginBottom: '0.5rem' }}>
-                <Target size={18} />
-                <span>목표가</span>
+              <div className={styles.chartContainer}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                    <PolarGrid stroke="var(--gray-200)" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--gray-400)', fontSize: 10 }} />
+                    <Radar
+                      name="AI Analysis"
+                      dataKey="A"
+                      stroke="var(--primary-color)"
+                      fill="var(--primary-color)"
+                      fillOpacity={0.4}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>${data?.ai.targetPrice.toLocaleString()}</div>
             </div>
-            <div style={{ width: '1px', backgroundColor: 'var(--gray-200)' }}></div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center', color: 'var(--red-600)', fontWeight: 600, marginBottom: '0.5rem' }}>
-                <AlertCircle size={18} />
-                <span>손절가</span>
+
+            <div className={styles.technicalGrid}>
+              <div className={styles.technicalItem}>
+                <span className={styles.technicalLabel}>CONFIDENCE</span>
+                <span className={styles.technicalValue}>{(data.ai.confidence * 100).toFixed(0)}%</span>
               </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>${data?.ai.stopLoss.toLocaleString()}</div>
+              <div className={styles.technicalItem}>
+                <span className={styles.technicalLabel}>SIGNAL</span>
+                <span className={styles.technicalValue}>{isBullish ? 'BUY' : 'SELL'}</span>
+              </div>
             </div>
           </div>
 
-          <div style={{ backgroundColor: 'var(--gray-50)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--gray-200)' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--gray-500)', marginBottom: '1rem', textTransform: 'uppercase' }}>Technical Indicators</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)' }}>Daily RSI</div>
-                <div style={{ fontWeight: 600 }}>{data?.technical.daily.rsi.toFixed(2)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)' }}>4H RSI</div>
-                <div style={{ fontWeight: 600 }}>{data?.technical.fourHour.rsi.toFixed(2)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)' }}>Daily MACD</div>
-                <div style={{ fontWeight: 600 }}>{data?.technical.daily.macd.toFixed(4)}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--gray-400)' }}>4H MACD</div>
-                <div style={{ fontWeight: 600 }}>{data?.technical.fourHour.macd.toFixed(4)}</div>
-              </div>
+          <div className={styles.predictionCard}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Info size={16} color="var(--primary-color)" />
+              AI Insights
+            </h3>
+            <ul className={styles.insightList}>
+              {data.ai.insights.map((insight, i) => (
+                <li key={i} className={styles.insightItem}>
+                  <div className={styles.insightIcon}><BarChart3 size={14} /></div>
+                  {insight}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className={styles.predictionCard}>
+            <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <ChartIcon size={16} color="var(--primary-color)" />
+              AI Advanced Analysis Chart
+            </h3>
+            <div className={styles.detailChartContainer} style={{ height: '650px', overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--gray-200)', background: 'var(--card-background)' }}>
+              <AICustomChart
+                symbol={symbol}
+                targetPrice={data.ai.targetPrice}
+                stopLoss={data.ai.stopLoss}
+                isBullish={isBullish}
+              />
             </div>
+            <p style={{ marginTop: '1rem', fontSize: '0.7rem', color: 'var(--gray-400)', textAlign: 'center' }}>
+              * 초록색 실선: AI 목표가 (Target) / 빨간색 점선: AI 손절가 (Stop Loss)
+            </p>
+
+
+          </div>
+        </>
+      ) : null}
+
+      {showEmailModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>한도 도달</h3>
+            <p style={{ color: 'var(--gray-500)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              일일 무료 분석(3회)이 완료되었습니다.<br />이메일 등록 시 계속 이용 가능합니다.
+            </p>
+            <form onSubmit={handleEmailSubmit}>
+              <input type="email" placeholder="email@example.com" required className={styles.primaryInput} value={email} onChange={(e) => setEmail(e.target.value)} />
+              <button type="submit" className={styles.primaryButton} style={{ width: '100%' }}>등록하고 계속하기</button>
+            </form>
+            <button onClick={() => setShowEmailModal(false)} style={{ marginTop: '1rem', fontSize: '0.75rem', color: 'var(--gray-400)' }}>나중에 하기</button>
           </div>
         </div>
-      </div>
-
-      <p style={{ fontSize: '0.75rem', color: 'var(--gray-400)', textAlign: 'center' }}>
-        * 본 분석은 AI가 제공하는 기술적 견해이며 실제 투자 결과에 대한 책임을 지지 않습니다.
-      </p>
+      )}
     </div>
   );
 };
