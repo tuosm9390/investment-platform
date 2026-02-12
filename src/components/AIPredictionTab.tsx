@@ -1,9 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, TrendingUp, TrendingDown, Info, AlertCircle, RefreshCw, BarChart3, LineChart as ChartIcon } from 'lucide-react';
+import { Brain, TrendingUp, TrendingDown, Info, AlertCircle, RefreshCw, BarChart3, LineChart as ChartIcon, BookOpen, Eye } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import * as LightweightCharts from 'lightweight-charts';
+import { Tooltip } from './Tooltip';
+import { InvestmentDisclaimer } from './InvestmentDisclaimer';
+import { HighlightedInsight } from './HighlightedInsight';
+import { GLOSSARY, getEasyRecommendation, getEasyTrend } from '@/data/investmentGlossary';
 import styles from '../app/search/[topic]/prices/page.module.css';
 
 interface AIPredictionProps {
@@ -31,6 +35,7 @@ interface PredictionData {
 
 const CACHE_KEY = 'ai_prediction_cache';
 const USAGE_KEY = 'ai_prediction_usage';
+const EASY_MODE_KEY = 'ai_easy_mode';
 
 interface OHLCVData {
   time: number;
@@ -47,13 +52,15 @@ const AICustomChart = ({
   entryPrice,
   targetPrice,
   stopLoss,
-  isBullish
+  isBullish,
+  easyMode,
 }: {
   symbol: string,
   entryPrice: number,
   targetPrice: number,
   stopLoss: number,
-  isBullish: boolean
+  isBullish: boolean,
+  easyMode: boolean,
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<LightweightCharts.IChartApi | null>(null);
@@ -86,20 +93,18 @@ const AICustomChart = ({
       wickDownColor: '#ef5350',
     }, 0);
 
-
-
     // EMA Series
     const ema20Series = chart.addSeries(LightweightCharts.LineSeries, {
       color: 'rgba(41, 98, 255, 0.7)',
       lineWidth: 1,
-      title: 'EMA 20',
+      title: easyMode ? '단기 평균(20)' : 'EMA 20',
       priceLineVisible: false,
     }, 0);
 
     const ema50Series = chart.addSeries(LightweightCharts.LineSeries, {
       color: 'rgba(255, 109, 0, 0.7)',
       lineWidth: 1,
-      title: 'EMA 50',
+      title: easyMode ? '중기 평균(50)' : 'EMA 50',
       priceLineVisible: false,
     }, 0);
 
@@ -107,17 +112,16 @@ const AICustomChart = ({
     const rsiSeries = chart.addSeries(LightweightCharts.LineSeries, {
       color: '#9c27b0',
       lineWidth: 2,
-      title: 'RSI(14)',
+      title: easyMode ? '과열지수(14)' : 'RSI(14)',
     }, 1);
 
-    // Add RSI levels
     rsiSeries.createPriceLine({
       price: 70,
       color: 'rgba(156, 39, 176, 0.4)',
       lineWidth: 1,
       lineStyle: LightweightCharts.LineStyle.Dashed,
       axisLabelVisible: true,
-      title: 'Overbought',
+      title: easyMode ? '과매수' : 'Overbought',
     });
 
     rsiSeries.createPriceLine({
@@ -126,13 +130,13 @@ const AICustomChart = ({
       lineWidth: 1,
       lineStyle: LightweightCharts.LineStyle.Dashed,
       axisLabelVisible: true,
-      title: 'Oversold',
+      title: easyMode ? '과매도' : 'Oversold',
     });
 
     // --- Pane 2: MACD ---
     const macdHistogramSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
       color: '#26a69a',
-      title: 'MACD Hist',
+      title: easyMode ? '추세 막대' : 'MACD Hist',
     }, 2);
 
     const macdLineSeries = chart.addSeries(LightweightCharts.LineSeries, {
@@ -144,7 +148,7 @@ const AICustomChart = ({
     const macdSignalSeries = chart.addSeries(LightweightCharts.LineSeries, {
       color: '#FF6D00',
       lineWidth: 1,
-      title: 'Signal',
+      title: easyMode ? '신호선' : 'Signal',
     }, 2);
 
     // Indicator Calculators
@@ -189,13 +193,8 @@ const AICustomChart = ({
       return results;
     };
 
-
-
-
     const fetchKlines = async () => {
       try {
-
-
         const binanceSymbol = symbol.toUpperCase().replace('USDT', '') + 'USDT';
         const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=4h&limit=150`);
         const klinesData = await response.json();
@@ -210,17 +209,8 @@ const AICustomChart = ({
         }));
 
         candlestickSeries.setData(formattedData as any);
-
-        // EMA Data
         ema20Series.setData(calculateEMA(formattedData, 20) as any);
         ema50Series.setData(calculateEMA(formattedData, 50) as any);
-
-
-
-
-
-
-
 
         // RSI 14
         const rsiData = calculateRSI(formattedData, 14);
@@ -249,24 +239,21 @@ const AICustomChart = ({
         macdSignalSeries.setData(signalLineData as any);
         macdHistogramSeries.setData(histogramData as any);
 
-
-
-
-
-
-
         // Entry/Target/Stop Loss Lines
         candlestickSeries.createPriceLine({
           price: entryPrice, color: '#2962FF', lineWidth: 2,
-          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: 'Entry (Limit)',
+          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
+          title: easyMode ? '매수 예정가' : 'Entry (Limit)',
         });
         candlestickSeries.createPriceLine({
           price: targetPrice, color: '#22c55e', lineWidth: 2,
-          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: 'Target',
+          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
+          title: easyMode ? '목표 수익가' : 'Target',
         });
         candlestickSeries.createPriceLine({
           price: stopLoss, color: '#ef4444', lineWidth: 2,
-          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: 'Stop Loss',
+          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
+          title: easyMode ? '손실 제한가' : 'Stop Loss',
         });
 
         chart.timeScale().fitContent();
@@ -282,7 +269,7 @@ const AICustomChart = ({
     return () => {
       chart.remove();
     };
-  }, [symbol, entryPrice, targetPrice, stopLoss]);
+  }, [symbol, entryPrice, targetPrice, stopLoss, easyMode]);
 
   return <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />;
 };
@@ -294,6 +281,21 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [email, setEmail] = useState('');
   const [usage, setUsage] = useState({ count: 0, date: '', emailRegistered: false });
+  const [easyMode, setEasyMode] = useState(true); // 기본값: 쉬운 말 모드
+
+  // 쉬운 말 모드 저장/복원
+  useEffect(() => {
+    const saved = localStorage.getItem(EASY_MODE_KEY);
+    if (saved !== null) {
+      setEasyMode(JSON.parse(saved));
+    }
+  }, []);
+
+  const toggleEasyMode = () => {
+    const newMode = !easyMode;
+    setEasyMode(newMode);
+    localStorage.setItem(EASY_MODE_KEY, JSON.stringify(newMode));
+  };
 
   useEffect(() => {
     setData(null);
@@ -363,8 +365,8 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
         localStorage.setItem(USAGE_KEY, JSON.stringify(newUsage));
       }
     } catch (err: unknown) {
-      console.error('AI Prediction fetch error:', err); // Log the error
-      setError('네트워크 오류가 발생했습니다.');
+      console.error('AI Prediction fetch error:', err);
+      setError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.');
     } finally {
       setLoading(false);
     }
@@ -385,6 +387,7 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
       <div className={styles.loading} style={{ padding: '4rem 1rem', minHeight: '300px' }}>
         <RefreshCw size={36} className={styles.spinner} style={{ color: 'var(--primary-color)', marginBottom: '1rem' }} />
         <p style={{ color: 'var(--gray-500)', fontSize: '0.9375rem' }}>AI가 데이터를 분석하고 있습니다...</p>
+        <p style={{ color: 'var(--gray-400)', fontSize: '0.75rem', marginTop: '0.5rem' }}>기술 지표를 수집하고 패턴을 분석 중입니다. 약 10~20초 소요될 수 있습니다.</p>
       </div>
     );
   }
@@ -400,30 +403,65 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
         </h3>
         <p style={{ color: 'var(--gray-500)', maxWidth: '360px', lineHeight: 1.5, fontSize: '0.875rem', marginBottom: '1.5rem' }}>
           차트 패턴과 기술 지표를 종합 분석하여<br />
-          AI가 매매 비중과 목표가를 산출합니다.
+          AI가 매매 방향과 목표 가격을 산출합니다.
         </p>
         <button onClick={() => fetchPrediction()} className={styles.primaryButton}>
           분석 시작하기
         </button>
+        <p style={{ color: 'var(--gray-400)', fontSize: '0.7rem', marginTop: '1rem', maxWidth: '300px' }}>
+          ⚠️ AI 분석 결과는 참고 자료이며, 투자 판단의 유일한 근거로 사용하면 안 됩니다.
+        </p>
       </div>
     );
   }
 
   const isBullish = !!(data?.ai.trend === 'Bullish' || data?.ai.trend?.toLowerCase().includes('bull'));
 
-  // Data for Radar Chart (Upper)
+  // Radar chart labels — 쉬운 말 모드 지원
   const radarData = data ? [
-    { subject: 'RSI (1D)', A: data.technical.daily.rsi, fullMark: 100 },
-    { subject: 'RSI (4H)', A: data.technical.fourHour.rsi, fullMark: 100 },
-    { subject: 'Confidence', A: data.ai.confidence * 100, fullMark: 100 },
-    { subject: 'Trend Strength', A: isBullish ? 80 : 30, fullMark: 100 },
+    { subject: easyMode ? '과열지수(일봉)' : 'RSI (1D)', A: data.technical.daily.rsi, fullMark: 100 },
+    { subject: easyMode ? '과열지수(4시간)' : 'RSI (4H)', A: data.technical.fourHour.rsi, fullMark: 100 },
+    { subject: easyMode ? 'AI 확신도' : 'Confidence', A: data.ai.confidence * 100, fullMark: 100 },
+    { subject: easyMode ? '추세 강도' : 'Trend Strength', A: isBullish ? 80 : 30, fullMark: 100 },
   ] : [];
+
+  // 추세/추천 텍스트
+  const displayTrend = easyMode ? getEasyTrend(data?.ai.trend || '') : data?.ai.trend;
+  const displayRecommendation = easyMode ? getEasyRecommendation(data?.ai.recommendation || '') : data?.ai.recommendation;
+  const displaySignal = easyMode
+    ? (isBullish ? '✅ 매수 방향' : '🔻 매도 방향')
+    : (isBullish ? 'BUY' : 'SELL');
 
   return (
     <div className={styles.aiPredictionContainer}>
+      {/* 모드 토글 + 업데이트 정보 */}
       <div className={styles.regenerationHeader}>
-        <div className={styles.lastUpdateText}>
-          {data && `업데이트: ${new Date(data.timestamp).toLocaleTimeString()}`}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className={styles.lastUpdateText}>
+            {data && `업데이트: ${new Date(data.timestamp).toLocaleTimeString()}`}
+          </div>
+          {/* 쉬운 말 / 전문가 모드 토글 */}
+          <button
+            onClick={toggleEasyMode}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              border: '1px solid',
+              borderColor: easyMode ? 'var(--primary-color)' : 'var(--gray-300)',
+              backgroundColor: easyMode ? 'rgba(88, 166, 255, 0.08)' : 'transparent',
+              color: easyMode ? 'var(--primary-color)' : 'var(--gray-500)',
+              transition: 'all 0.2s',
+            }}
+            title={easyMode ? '전문가 모드로 전환' : '쉬운 말 모드로 전환'}
+          >
+            {easyMode ? <BookOpen size={12} /> : <Eye size={12} />}
+            {easyMode ? '쉬운 말 모드' : '전문가 모드'}
+          </button>
         </div>
         <div className={styles.refreshControl}>
           <span className={styles.usageInfo}>
@@ -449,20 +487,32 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
               <div className={styles.recommendationBox}>
                 <div className={`${styles.trendBadge} ${isBullish ? styles.bullishBadge : styles.bearishBadge}`}>
                   {isBullish ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                  {data.ai.trend}
+                  {displayTrend}
                 </div>
-                <h2 className={styles.recommendationText}>{data.ai.recommendation}</h2>
+                <h2 className={styles.recommendationText}>{displayRecommendation}</h2>
                 <div className={styles.priceContainer}>
                   <div className={styles.priceItem}>
-                    <span className={styles.priceLabel}>Entry</span>
+                    <span className={styles.priceLabel}>
+                      <Tooltip term={GLOSSARY.ENTRY.term} shortDesc={GLOSSARY.ENTRY.shortDesc} detail={GLOSSARY.ENTRY.detail} metaphor={GLOSSARY.ENTRY.metaphor} actionTip={GLOSSARY.ENTRY.actionTip} variant="icon">
+                        {easyMode ? '매수 예정가' : '진입가'}
+                      </Tooltip>
+                    </span>
                     <span className={styles.priceValue} style={{ color: 'var(--primary-color)' }}>${data.ai.entryPrice?.toLocaleString()}</span>
                   </div>
                   <div className={styles.priceItem}>
-                    <span className={styles.priceLabel}>Target</span>
+                    <span className={styles.priceLabel}>
+                      <Tooltip term={GLOSSARY.TARGET.term} shortDesc={GLOSSARY.TARGET.shortDesc} detail={GLOSSARY.TARGET.detail} metaphor={GLOSSARY.TARGET.metaphor} actionTip={GLOSSARY.TARGET.actionTip} variant="icon">
+                        {easyMode ? '목표 수익가' : '목표가'}
+                      </Tooltip>
+                    </span>
                     <span className={styles.priceValue} style={{ color: 'var(--success)' }}>${data.ai.targetPrice?.toLocaleString()}</span>
                   </div>
                   <div className={styles.priceItem}>
-                    <span className={styles.priceLabel}>Stop Loss</span>
+                    <span className={styles.priceLabel}>
+                      <Tooltip term={GLOSSARY.STOP_LOSS.term} shortDesc={GLOSSARY.STOP_LOSS.shortDesc} detail={GLOSSARY.STOP_LOSS.detail} metaphor={GLOSSARY.STOP_LOSS.metaphor} actionTip={GLOSSARY.STOP_LOSS.actionTip} variant="icon">
+                        {easyMode ? '손실 제한가' : '손절가'}
+                      </Tooltip>
+                    </span>
                     <span className={styles.priceValue} style={{ color: 'var(--danger)' }}>${data.ai.stopLoss?.toLocaleString()}</span>
                   </div>
                 </div>
@@ -487,12 +537,16 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
 
             <div className={styles.technicalGrid}>
               <div className={styles.technicalItem}>
-                <span className={styles.technicalLabel}>CONFIDENCE</span>
+                <span className={styles.technicalLabel}>
+                  <Tooltip term={GLOSSARY.CONFIDENCE.term} shortDesc={GLOSSARY.CONFIDENCE.shortDesc} detail={GLOSSARY.CONFIDENCE.detail} actionTip={GLOSSARY.CONFIDENCE.actionTip} variant="icon">
+                    {easyMode ? 'AI 확신도' : '신뢰도'}
+                  </Tooltip>
+                </span>
                 <span className={styles.technicalValue}>{(data.ai.confidence * 100).toFixed(0)}%</span>
               </div>
               <div className={styles.technicalItem}>
-                <span className={styles.technicalLabel}>SIGNAL</span>
-                <span className={styles.technicalValue}>{isBullish ? 'BUY' : 'SELL'}</span>
+                <span className={styles.technicalLabel}>{easyMode ? '매매 방향' : '매매 신호'}</span>
+                <span className={styles.technicalValue}>{displaySignal}</span>
               </div>
             </div>
           </div>
@@ -500,13 +554,18 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
           <div className={styles.predictionCard}>
             <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Info size={16} color="var(--primary-color)" />
-              AI Insights
+              AI 분석 인사이트
             </h3>
+            {easyMode && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--gray-400)', marginBottom: '0.75rem', padding: '0.5rem 0.75rem', background: 'var(--gray-50)', borderRadius: 'var(--radius-md)', border: '1px solid var(--gray-100)' }}>
+                💡 전문 용어 위에 마우스를 올리면(모바일: 탭) 설명을 볼 수 있어요
+              </p>
+            )}
             <ul className={styles.insightList}>
               {data.ai.insights.map((insight, i) => (
                 <li key={i} className={styles.insightItem}>
                   <div className={styles.insightIcon}><BarChart3 size={14} /></div>
-                  {insight}
+                  <span><HighlightedInsight text={insight} easyMode={easyMode} /></span>
                 </li>
               ))}
             </ul>
@@ -515,7 +574,7 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
           <div className={styles.predictionCard}>
             <h3 style={{ fontSize: '0.875rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <ChartIcon size={16} color="var(--primary-color)" />
-              AI Advanced Analysis Chart
+              {easyMode ? 'AI 상세 분석 차트' : 'AI Advanced Analysis Chart'}
             </h3>
             <div className={styles.detailChartContainer} style={{ height: '650px', overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--gray-200)', background: 'var(--card-background)' }}>
               <AICustomChart
@@ -524,14 +583,19 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
                 targetPrice={data.ai.targetPrice}
                 stopLoss={data.ai.stopLoss}
                 isBullish={isBullish}
+                easyMode={easyMode}
               />
             </div>
             <p style={{ marginTop: '1rem', fontSize: '0.7rem', color: 'var(--gray-400)', textAlign: 'center' }}>
-              * 파란색 실선: 진입 지정가 (Entry) / 초록색 실선: AI 목표가 (Target) / 빨간색 점선: AI 손절가 (Stop Loss)
+              {easyMode
+                ? '* 파란 실선: 매수 예정 가격 / 초록 실선: 목표 수익 가격 / 빨간 실선: 손실 제한 가격'
+                : '* 파란색 실선: 진입 지정가 (Entry) / 초록색 실선: AI 목표가 (Target) / 빨간색 점선: AI 손절가 (Stop Loss)'
+              }
             </p>
-
-
           </div>
+
+          {/* 면책 조항 */}
+          <InvestmentDisclaimer variant="full" />
         </>
       ) : null}
 

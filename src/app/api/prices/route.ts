@@ -3,14 +3,26 @@ import { getCryptoPrices, getStockPrices, PriceData, StockPriceData } from '@/li
 
 // Server-side cache to reduce API calls
 let cachedCrypto: PriceData[] = [];
-const cachedStocks: StockPriceData[] = getStockPrices();
+let cachedStocks: StockPriceData[] = [];
 let lastFetchTime: number = 0;
-const CACHE_DURATION = 15000; // 15 seconds cache (CoinCap has generous limits)
+let lastStockFetchTime: number = 0;
+const CACHE_DURATION = 15000; // 15 seconds
+const STOCK_CACHE_DURATION = 60000; // 1분 (주식은 업데이트 빈도가 낮음)
 
 export async function GET() {
   const now = Date.now();
 
-  // Check if cache is still valid
+  // 주식 캐시 갱신 (1분마다)
+  if (cachedStocks.length === 0 || (now - lastStockFetchTime) > STOCK_CACHE_DURATION) {
+    try {
+      cachedStocks = await getStockPrices();
+      lastStockFetchTime = now;
+    } catch {
+      // 실패해도 기존 캐시 유지
+    }
+  }
+
+  // Check if crypto cache is still valid
   if (cachedCrypto.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
     return NextResponse.json({
       crypto: cachedCrypto,
@@ -24,11 +36,10 @@ export async function GET() {
     const crypto = await getCryptoPrices();
 
     if (crypto.length === 0) {
-      console.warn('Crypto prices returned empty. Fallback might have failed or returned no data.');
+      console.warn('Crypto prices returned empty.');
     } else {
       cachedCrypto = crypto;
       lastFetchTime = now;
-      console.log(`Successfully fetched ${crypto.length} crypto prices.`);
     }
 
     return NextResponse.json({
@@ -39,7 +50,6 @@ export async function GET() {
   } catch (error: any) {
     console.error('API Route Error:', error.message || error);
 
-    // Return cached data if available
     if (cachedCrypto.length > 0) {
       return NextResponse.json({
         crypto: cachedCrypto,

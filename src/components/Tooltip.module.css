@@ -1,0 +1,183 @@
+.wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: help;
+  transition: color 0.15s;
+}
+
+.trigger:hover {
+  color: var(--primary-color);
+}
+
+.underlineTrigger {
+  border-bottom: 1px dashed var(--gray-400);
+  padding-bottom: 1px;
+}
+
+.underlineTrigger:hover {
+  border-bottom-color: var(--primary-color);
+}
+
+.helpIcon {
+  color: var(--gray-400);
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.trigger:hover .helpIcon {
+  color: var(--primary-color);
+}
+
+/* Tooltip Popup */
+.tooltip {
+  position: absolute;
+  z-index: 1000;
+  width: 300px;
+  max-width: 90vw;
+  padding: 0.875rem 1rem;
+  background: var(--background);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  animation: tooltipFadeIn 0.15s ease-out;
+  pointer-events: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltipWide {
+  width: 340px;
+}
+
+[data-theme='dark'] .tooltip {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip.top {
+  bottom: calc(100% + 8px);
+}
+
+.tooltip.bottom {
+  top: calc(100% + 8px);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.tooltipHeader {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.tooltipShort {
+  font-size: 0.8125rem;
+  color: var(--foreground);
+  line-height: 1.5;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+/* 🐋 고래 비유 */
+.tooltipMetaphor {
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  line-height: 1.65;
+  border-top: 1px solid var(--gray-100);
+  padding-top: 8px;
+  margin-top: 4px;
+  white-space: pre-line;
+}
+
+[data-theme='dark'] .tooltipMetaphor {
+  color: var(--gray-500);
+  border-top-color: var(--gray-200);
+}
+
+/* 상세 설명 (metaphor가 없을 때만 표시) */
+.tooltipDetail {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+  border-top: 1px solid var(--gray-100);
+  padding-top: 6px;
+}
+
+[data-theme='dark'] .tooltipDetail {
+  border-top-color: var(--gray-200);
+}
+
+/* 💡 실전 팁 */
+.tooltipTip {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 171, 0, 0.06);
+  border: 1px solid rgba(255, 171, 0, 0.15);
+  border-radius: var(--radius-md);
+  font-size: 0.6875rem;
+  color: var(--warning);
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.tooltipTip svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+[data-theme='dark'] .tooltipTip {
+  background: rgba(255, 171, 0, 0.08);
+  border-color: rgba(255, 171, 0, 0.2);
+}
+
+/* 모바일 대응 */
+@media (max-width: 640px) {
+  .tooltip {
+    width: 280px;
+    padding: 0.75rem;
+  }
+
+  .tooltipWide {
+    width: 300px;
+  }
+
+  .tooltipHeader {
+    font-size: 0.75rem;
+  }
+
+  .tooltipShort {
+    font-size: 0.75rem;
+  }
+
+  .tooltipMetaphor,
+  .tooltipDetail {
+    font-size: 0.6875rem;
+  }
+
+  .tooltipTip {
+    font-size: 0.625rem;
+  }
+}

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { LayoutGrid, List as ListIcon } from 'lucide-react';
+import { LayoutGrid, List as ListIcon, FileSearch } from 'lucide-react';
 import type { NewsItem } from '@/data/mockData';
 import styles from './NewsFeed.module.css';
 
@@ -12,6 +12,19 @@ interface NewsFeedProps {
 
 export default function NewsFeed({ news }: NewsFeedProps) {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+
+  if (!news || news.length === 0) {
+    return (
+      <div className={styles.emptyState}>
+        <FileSearch size={48} className={styles.emptyIcon} />
+        <h3 className={styles.emptyTitle}>관련 뉴스를 찾을 수 없습니다</h3>
+        <p className={styles.emptyDesc}>
+          검색어와 관련된 최신 뉴스가 없거나 일시적인 문제일 수 있습니다.
+          <br />다른 키워드로 검색해 보세요.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>

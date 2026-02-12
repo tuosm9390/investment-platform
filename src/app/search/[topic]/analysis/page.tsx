@@ -1,6 +1,7 @@
 import { getAnalysis } from '@/data/mockData';
 import { crawlNews } from '@/lib/crawler';
 import { generateAnalysisFromNews } from '@/lib/analyzer';
+import { InvestmentDisclaimer } from '@/components/InvestmentDisclaimer';
 import styles from './page.module.css';
 
 interface PageProps {
@@ -27,7 +28,7 @@ export default async function AnalysisPage({ params }: PageProps) {
     <div className={styles.container}>
       <section className={styles.scoreCard}>
         <div className={styles.scoreInfo}>
-          <div className={styles.label}>AI Investment Outlook</div>
+          <div className={styles.label}>AI 투자 전망</div>
           <div className={`${styles.sentiment} ${styles[sentimentClass]}`}>
             {analysis.sentiment}
           </div>
@@ -40,7 +41,7 @@ export default async function AnalysisPage({ params }: PageProps) {
 
       <div className={styles.grid}>
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>핵심 투자 포인트 (Key Points)</h3>
+          <h3 className={styles.sectionTitle}>핵심 투자 포인트</h3>
           <ul className={styles.list}>
             {analysis.keyPoints.map((point, index) => (
               <li key={index} className={styles.listItem}>
@@ -52,7 +53,7 @@ export default async function AnalysisPage({ params }: PageProps) {
         </section>
 
         <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>주의해야 할 리스크 (Risks)</h3>
+          <h3 className={styles.sectionTitle}>주의해야 할 리스크</h3>
           <ul className={styles.list}>
             {analysis.risks.map((point, index) => (
               <li key={index} className={styles.listItem}>
@@ -63,6 +64,8 @@ export default async function AnalysisPage({ params }: PageProps) {
           </ul>
         </section>
       </div>
+
+      <InvestmentDisclaimer variant="compact" />
     </div>
   );
 }

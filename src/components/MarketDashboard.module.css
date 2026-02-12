@@ -1,0 +1,356 @@
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.section {
+  background: var(--background);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+}
+
+[data-theme='dark'] .section {
+  background: var(--gray-50);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.moreLink {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  transition: opacity 0.15s;
+}
+
+.moreLink:hover {
+  opacity: 0.8;
+}
+
+/* Coin Grid */
+.coinGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+  .coinGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .coinGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.coinCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0.875rem;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.coinCard:hover {
+  border-color: var(--primary-color);
+  background: var(--gray-50);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='dark'] .coinCard {
+  border-color: var(--gray-200);
+}
+
+[data-theme='dark'] .coinCard:hover {
+  background: var(--gray-100);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.coinHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coinIconWrapper {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.coinIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.coinIconFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--gray-500);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.coinName {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: 1.2;
+}
+
+.coinSymbol {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--gray-400);
+}
+
+.coinPrice {
+  display: flex;
+  flex-direction: column;
+}
+
+.priceUsd {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.priceKrw {
+  font-size: 0.6875rem;
+  color: var(--gray-400);
+  font-variant-numeric: tabular-nums;
+}
+
+.changeTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.changeTag.positive {
+  background: rgba(54, 179, 126, 0.1);
+  color: var(--success);
+}
+
+.changeTag.negative {
+  background: rgba(255, 86, 48, 0.1);
+  color: var(--danger);
+}
+
+[data-theme='dark'] .changeTag.positive {
+  background: rgba(54, 179, 126, 0.15);
+}
+
+[data-theme='dark'] .changeTag.negative {
+  background: rgba(255, 86, 48, 0.15);
+}
+
+/* Trend Grid */
+.trendGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+@media (max-width: 640px) {
+  .trendGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trendSection {
+  background: var(--background);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+[data-theme='dark'] .trendSection {
+  background: var(--gray-50);
+}
+
+.trendTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: var(--spacing-sm);
+}
+
+.gainIcon {
+  color: var(--success);
+}
+
+.lossIcon {
+  color: var(--danger);
+}
+
+.trendList {
+  display: flex;
+  flex-direction: column;
+}
+
+.trendItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--gray-100);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.trendItem:last-child {
+  border-bottom: none;
+}
+
+.trendItem:hover {
+  background: var(--gray-50);
+  margin: 0 calc(var(--spacing-sm) * -1);
+  padding-left: var(--spacing-sm);
+  padding-right: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+}
+
+[data-theme='dark'] .trendItem {
+  border-bottom-color: var(--gray-200);
+}
+
+.trendName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--foreground);
+}
+
+.trendSymbol {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+[data-theme='dark'] .trendSymbol {
+  background: var(--gray-200);
+}
+
+.trendChange {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.trendChange.positive {
+  color: var(--success);
+}
+
+.trendChange.negative {
+  color: var(--danger);
+}
+
+/* Loading Skeleton */
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+  .skeletonGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 1rem;
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-lg);
+}
+
+.skeletonCircle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+.skeletonLine {
+  height: 14px;
+  width: 80%;
+  border-radius: var(--radius-sm);
+  background: var(--gray-200);
+  animation: skeletonPulse 1.5s ease-in-out 0.1s infinite;
+}
+
+.skeletonLineShort {
+  height: 10px;
+  width: 50%;
+  border-radius: var(--radius-sm);
+  background: var(--gray-200);
+  animation: skeletonPulse 1.5s ease-in-out 0.2s infinite;
+}
+
+@keyframes skeletonPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}

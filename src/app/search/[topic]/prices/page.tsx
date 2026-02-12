@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { PriceData, StockPriceData, getTradingViewSymbol, BINANCE_WS_URL, KRW_RATE, FilterType, filterCryptoData } from '@/lib/prices';
+import { PriceData, StockPriceData, BINANCE_WS_URL, KRW_RATE, FilterType, filterCryptoData } from '@/lib/prices';
 import styles from './page.module.css';
+import ErrorBanner from '@/components/ErrorBanner';
 import { AIPredictionTab } from '@/components/AIPredictionTab';
 
 const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
@@ -30,7 +32,9 @@ interface BinanceTickerStream {
 export default function PricesPage() {
   const [allCryptoPrices, setAllCryptoPrices] = useState<PriceData[]>([]);
   const [stockPrices, setStockPrices] = useState<StockPriceData[]>([]);
-  const [selectedCrypto, setSelectedCrypto] = useState<string>('btc');
+  const searchParams = useSearchParams();
+  const coinParam = searchParams.get('coin');
+  const [selectedCrypto, setSelectedCrypto] = useState<string>(coinParam?.toLowerCase() || 'btc');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +42,25 @@ export default function PricesPage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('volume');
   const [displayCount, setDisplayCount] = useState(10);
   const [activeTab, setActiveTab] = useState<'prices' | 'ai'>('prices');
-  const [imageErrorMap, setImageErrorMap] = useState<Set<string>>(new Set()); // Track images that failed to load
+  const [imageErrorMap, setImageErrorMap] = useState<Set<string>>(new Set());
+
+  // TradingView 심볼 — 서버에서 USD/USDT 존재 여부 검증 후 설정
+  const [tradingViewSymbol, setTradingViewSymbol] = useState<string>(`${(coinParam || 'btc').toUpperCase()}USD`);
+
+  useEffect(() => {
+    let cancelled = false;
+    const resolve = async () => {
+      try {
+        const res = await fetch(`/api/resolve-tv-symbol?coin=${selectedCrypto}`);
+        const data = await res.json();
+        if (!cancelled) setTradingViewSymbol(data.symbol);
+      } catch {
+        if (!cancelled) setTradingViewSymbol(`${selectedCrypto.toUpperCase()}USDT`);
+      }
+    };
+    resolve();
+    return () => { cancelled = true; };
+  }, [selectedCrypto]);
 
   const isMounted = useRef(true);
   const wsRef = useRef<WebSocket | null>(null);
@@ -229,7 +251,6 @@ export default function PricesPage() {
     return `$${volume.toFixed(2)}`;
   }, []);
 
-  const tradingViewSymbol = getTradingViewSymbol(selectedCrypto);
 
   if (isLoading && allCryptoPrices.length === 0) {
     return (
@@ -243,10 +264,10 @@ export default function PricesPage() {
   if (error && allCryptoPrices.length === 0) {
     return (
       <div className={styles.errorContainer}>
-        <p className={styles.errorMessage}>{error}</p>
-        <button onClick={fetchInitialPrices} className={styles.retryButton}>
-          다시 시도
-        </button>
+        <ErrorBanner
+          message={error}
+          onRetry={fetchInitialPrices}
+        />
       </div>
     );
   }
@@ -265,6 +286,13 @@ export default function PricesPage() {
           </span>
         )}
       </div>
+
+      {wsStatus === 'disconnected' && (
+        <ErrorBanner
+          variant="warning"
+          message="실시간 연결이 끊어졌습니다. 자동 재연결을 시도합니다."
+        />
+      )}
 
       {/* Main Tabs Selection */}
       <div className={styles.mainTabs}>
@@ -303,7 +331,7 @@ export default function PricesPage() {
             <div className={styles.chartWrapper}>
               <iframe
                 key={tradingViewSymbol}
-                src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${tradingViewSymbol}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Asia%2FSeoul&withdateranges=1&showpopupbutton=1&locale=kr`}
+                src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${tradingViewSymbol}&interval=240&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=[]&theme=dark&style=1&timezone=Asia%2FSeoul&withdateranges=1&showpopupbutton=1&locale=kr`}
                 className={styles.tradingViewFrame}
                 allowFullScreen
               />

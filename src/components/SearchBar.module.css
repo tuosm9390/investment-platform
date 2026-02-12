@@ -13,8 +13,7 @@
 .input {
   width: 100%;
   height: 56px;
-  padding: 0 var(--spacing-xl) 0 3rem;
-  /* Left padding for search icon */
+  padding: 0 7rem 0 3rem;
   font-size: 1.125rem;
   color: var(--foreground);
   background-color: var(--background);
@@ -42,6 +41,29 @@
   pointer-events: none;
 }
 
+.clearButton {
+  position: absolute;
+  right: 5.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  transition: all 0.15s;
+}
+
+.clearButton:hover {
+  color: var(--foreground);
+  background: var(--gray-200);
+}
+
+[data-theme='dark'] .clearButton {
+  background: var(--gray-700);
+}
+
 .submitButton {
   position: absolute;
   right: 0.75rem;
@@ -56,4 +78,180 @@
 
 .submitButton:hover {
   background-color: var(--primary-hover);
+}
+
+/* =========================
+   자동완성 드롭다운
+   ========================= */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--background);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  max-height: 380px;
+  overflow-y: auto;
+  animation: dropdownIn 0.15s ease-out;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-theme='dark'] .dropdown {
+  background: var(--gray-800);
+  border-color: var(--gray-700);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.dropdownSection {
+  padding: var(--spacing-xs) 0;
+}
+
+.dropdownSection+.dropdownSection {
+  border-top: 1px solid var(--gray-100);
+}
+
+[data-theme='dark'] .dropdownSection+.dropdownSection {
+  border-top-color: var(--gray-700);
+}
+
+.dropdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dropdownHeader span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clearRecentBtn {
+  font-size: 0.7rem;
+  color: var(--gray-400);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.clearRecentBtn:hover {
+  color: var(--danger);
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  background: none;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color 0.1s;
+  font-size: 0.9375rem;
+}
+
+.dropdownItem:hover,
+.dropdownItemActive {
+  background-color: var(--gray-50);
+}
+
+[data-theme='dark'] .dropdownItem:hover,
+[data-theme='dark'] .dropdownItemActive {
+  background-color: var(--gray-700);
+}
+
+.suggestionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  color: var(--gray-400);
+}
+
+.suggestionName {
+  flex: 1;
+  font-weight: 500;
+}
+
+.suggestionSymbol {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-400);
+  background: var(--gray-50);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+}
+
+[data-theme='dark'] .suggestionSymbol {
+  background: var(--gray-700);
+  color: var(--gray-500);
+}
+
+.suggestionType {
+  font-size: 0.6875rem;
+  color: var(--gray-400);
+  white-space: nowrap;
+}
+
+/* =========================
+   반응형
+   ========================= */
+@media (max-width: 640px) {
+  .input {
+    height: 48px;
+    font-size: 1rem;
+    padding: 0 6rem 0 2.5rem;
+  }
+
+  .searchIcon {
+    left: 0.875rem;
+  }
+
+  .clearButton {
+    right: 4.75rem;
+  }
+
+  .submitButton {
+    height: 36px;
+    padding: 0 var(--spacing-md);
+    font-size: 0.875rem;
+  }
+
+  .dropdown {
+    max-height: 300px;
+  }
+
+  .dropdownItem {
+    padding: var(--spacing-sm);
+    font-size: 0.875rem;
+  }
+
+  .suggestionType {
+    display: none;
+  }
 }

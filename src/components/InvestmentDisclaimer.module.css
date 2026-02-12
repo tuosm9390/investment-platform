@@ -1,0 +1,142 @@
+/* ===== Inline ===== */
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  color: var(--gray-400);
+  margin-top: var(--spacing-md);
+  text-align: center;
+  justify-content: center;
+}
+
+/* ===== Compact ===== */
+.compact {
+  margin-top: var(--spacing-lg);
+  padding: 0.875rem 1rem;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+}
+
+[data-theme='dark'] .compact {
+  background: var(--gray-100);
+}
+
+.compactHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--warning);
+  margin-bottom: 6px;
+}
+
+.compactText {
+  font-size: 0.6875rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+}
+
+/* ===== Full ===== */
+.full {
+  border: 1px solid rgba(255, 171, 0, 0.25);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: rgba(255, 171, 0, 0.03);
+}
+
+[data-theme='dark'] .full {
+  border-color: rgba(255, 171, 0, 0.15);
+  background: rgba(255, 171, 0, 0.04);
+}
+
+.fullHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  color: var(--warning);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.fullHeader:hover {
+  background: rgba(255, 171, 0, 0.05);
+}
+
+.fullHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fullTitle {
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.fullSummary {
+  padding: 0 1rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+}
+
+.fullSummary strong {
+  color: var(--foreground);
+}
+
+.fullDetail {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--gray-100);
+  animation: expandIn 0.2s ease-out;
+}
+
+[data-theme='dark'] .fullDetail {
+  border-top-color: var(--gray-200);
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.detailList {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.detailList li {
+  font-size: 0.6875rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.detailList li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.detailList li strong {
+  color: var(--foreground);
+  font-weight: 600;
+}

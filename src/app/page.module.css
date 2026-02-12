@@ -1,12 +1,19 @@
 .container {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-2xl);
+  padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-2xl);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Hero Section */
+.heroSection {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: calc(100vh - 140px);
-  /* Adjust based on header/footer */
-  padding: 0 var(--spacing-xl);
   text-align: center;
+  padding-top: var(--spacing-2xl);
 }
 
 .title {
@@ -14,42 +21,90 @@
   font-weight: 800;
   margin-bottom: var(--spacing-md);
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
-  font-size: 1.25rem;
-  color: var(--gray-600);
+  font-size: 1.125rem;
+  color: var(--gray-500);
   margin-bottom: var(--spacing-2xl);
-  max-width: 600px;
+  max-width: 480px;
+  line-height: 1.6;
 }
 
 .searchWrapper {
   width: 100%;
   max-width: 600px;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
 }
 
+/* Tags */
 .tags {
   display: flex;
-  gap: var(--spacing-sm);
+  align-items: center;
+  gap: var(--spacing-xs);
   flex-wrap: wrap;
   justify-content: center;
-  margin-top: var(--spacing-lg);
+}
+
+.tagLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-400);
+  margin-right: var(--spacing-xs);
 }
 
 .tag {
-  padding: var(--spacing-xs) var(--spacing-md);
-  background-color: var(--gray-100);
-  border-radius: var(--radius-full);
+  padding: 4px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--gray-600);
-  font-size: 0.875rem;
-  transition: all 0.2s;
-  cursor: pointer;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-full);
+  transition: all 0.15s;
+  text-decoration: none;
 }
 
 .tag:hover {
-  background-color: var(--gray-200);
   color: var(--primary-color);
+  border-color: var(--primary-color);
+  background: rgba(88, 166, 255, 0.05);
+}
+
+[data-theme='dark'] .tag {
+  background: var(--gray-100);
+  border-color: var(--gray-200);
+}
+
+/* Dashboard Section */
+.dashboardSection {
+  width: 100%;
+}
+
+/* Research Section */
+.researchSection {
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .container {
+    padding: var(--spacing-md);
+    gap: var(--spacing-xl);
+  }
+
+  .heroSection {
+    padding-top: var(--spacing-xl);
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
 }

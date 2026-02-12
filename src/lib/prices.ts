@@ -158,21 +158,86 @@ export function filterCryptoData(data: PriceData[], filter: FilterType, limit: n
   return sorted.slice(0, limit);
 }
 
-// Mock stock data
-export function getStockPrices(): StockPriceData[] {
-  return [
-    { id: 'samsung', symbol: '005930', name: '삼성전자', current_price: 78500, price_change_percentage_24h: 1.2 },
-    { id: 'sk-hynix', symbol: '000660', name: 'SK하이닉스', current_price: 142000, price_change_percentage_24h: -0.8 },
-    { id: 'lg-energy', symbol: '373220', name: 'LG에너지솔루션', current_price: 412000, price_change_percentage_24h: 0.5 },
-    { id: 'hyundai-motor', symbol: '005380', name: '현대자동차', current_price: 215000, price_change_percentage_24h: 2.1 },
-    { id: 'naver', symbol: '035420', name: 'NAVER', current_price: 198000, price_change_percentage_24h: 0.3 },
-    { id: 'kakao', symbol: '035720', name: '카카오', current_price: 51200, price_change_percentage_24h: -0.2 },
-  ];
+// 한국 주식 데이터 — 네이버 금융 API에서 실시간 조회
+const STOCK_LIST = [
+  { id: 'samsung', symbol: '005930', name: '삼성전자' },
+  { id: 'sk-hynix', symbol: '000660', name: 'SK하이닉스' },
+  { id: 'lg-energy', symbol: '373220', name: 'LG에너지솔루션' },
+  { id: 'hyundai-motor', symbol: '005380', name: '현대자동차' },
+  { id: 'naver', symbol: '035420', name: 'NAVER' },
+  { id: 'kakao', symbol: '035720', name: '카카오' },
+];
+
+// 네이버 금융 API fallback 데이터
+const FALLBACK_STOCKS: StockPriceData[] = [
+  { id: 'samsung', symbol: '005930', name: '삼성전자', current_price: 78500, price_change_percentage_24h: 0 },
+  { id: 'sk-hynix', symbol: '000660', name: 'SK하이닉스', current_price: 142000, price_change_percentage_24h: 0 },
+  { id: 'lg-energy', symbol: '373220', name: 'LG에너지솔루션', current_price: 412000, price_change_percentage_24h: 0 },
+  { id: 'hyundai-motor', symbol: '005380', name: '현대자동차', current_price: 215000, price_change_percentage_24h: 0 },
+  { id: 'naver', symbol: '035420', name: 'NAVER', current_price: 198000, price_change_percentage_24h: 0 },
+  { id: 'kakao', symbol: '035720', name: '카카오', current_price: 51200, price_change_percentage_24h: 0 },
+];
+
+export async function getStockPrices(): Promise<StockPriceData[]> {
+  try {
+    const symbols = STOCK_LIST.map(s => s.symbol).join(',');
+    // 네이버 금융 시세 API
+    const response = await axios.get(
+      `https://m.stock.naver.com/api/stocks/marketValue?stockCodes=${symbols}`,
+      { timeout: 5000 }
+    );
+
+    if (response.data && Array.isArray(response.data)) {
+      return response.data.map((item: any) => {
+        const stock = STOCK_LIST.find(s => s.symbol === item.stockCode);
+        const currentPrice = parseInt(item.closePrice?.replace(/,/g, '') || '0', 10);
+        const changeRate = parseFloat(item.fluctuationsRatio || '0');
+        return {
+          id: stock?.id || item.stockCode,
+          symbol: item.stockCode || stock?.symbol || '',
+          name: stock?.name || item.stockName || '',
+          current_price: currentPrice,
+          price_change_percentage_24h: changeRate,
+        };
+      });
+    }
+    return FALLBACK_STOCKS;
+  } catch {
+    // 네이버 API 실패 시 개별 종목 조회 시도
+    try {
+      const results: StockPriceData[] = [];
+      for (const stock of STOCK_LIST) {
+        try {
+          const res = await axios.get(
+            `https://m.stock.naver.com/api/stock/${stock.symbol}/basic`,
+            { timeout: 3000 }
+          );
+          const data = res.data;
+          results.push({
+            id: stock.id,
+            symbol: stock.symbol,
+            name: stock.name,
+            current_price: parseInt(data?.closePrice?.replace(/,/g, '') || '0', 10) || 0,
+            price_change_percentage_24h: parseFloat(data?.fluctuationsRatio || '0') || 0,
+          });
+        } catch {
+          // 개별 종목 실패 시 fallback 사용
+          const fallback = FALLBACK_STOCKS.find(f => f.symbol === stock.symbol);
+          if (fallback) results.push(fallback);
+        }
+      }
+      return results.length > 0 ? results : FALLBACK_STOCKS;
+    } catch {
+      return FALLBACK_STOCKS;
+    }
+  }
 }
 
-// TradingView symbol mapping
+// TradingView 심볼 매핑
+// {SYMBOL}USD로 검색 → TradingView가 spot crypto 최상단 거래소 자동 선택
+// USD 페어 없는 코인은 TradingView가 자동으로 USDT 등 가장 가까운 페어 표시
 export function getTradingViewSymbol(cryptoId: string): string {
-  return `BINANCE:${cryptoId.toUpperCase()}USDT`;
+  return `${cryptoId.toUpperCase()}USD`;
 }
 
 // Binance WebSocket stream URL for real-time prices (using 24hr ticker for percentage change)

@@ -65,10 +65,10 @@ export default function Header() {
 
       <nav className={styles.nav}>
         <Link href="/search/stock" className={styles.navLink}>
-          주식 (Stocks)
+          주식
         </Link>
         <Link href="/search/crypto" className={styles.navLink}>
-          암호화폐 (Crypto)
+          암호화폐
         </Link>
       </nav>
 
@@ -78,7 +78,7 @@ export default function Header() {
             ref={inputRef}
             type="text"
             className={`${styles.searchInput} ${isSearchOpen ? styles.open : ''}`}
-            placeholder="Search topic..."
+            placeholder="검색어를 입력하세요"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={handleKeyDown}
