@@ -11,35 +11,34 @@ If price action shows >5 consecutive inside bars or conflicting signals across 3
 
 ---
 
-## 2. SMC DETECTION (Score each 1–10)
-Evaluate and score:
-- **BOS** (Break of Structure)  
-- **CHoCH** (Change of Character)  
-- **Order Block** (OB)  
-- **Fair Value Gap** (FVG)  
-- **Liquidity Sweep**  
-- **Displacement**
+## 2. SMC & ICT PATTERN DETECTION (Core Analysis)
+Identify and evaluate the following concepts from the chart/data:
+- **MSS/CHoCH (Change of Character)**: First sign of trend reversal. Essential for trend shifting assessment.
+- **BOS (Break of Structure)**: Confirmation of trend continuation.
+- **Order Block (OB)**: High-volume areas where institutional money is likely placed.
+- **Fair Value Gap (FVG)**: Price imbalances that act as magnets or resistance/support.
+- **Liquidity Sweeps**: Taking out Stop-Losses at previous Highs/Lows before reversal.
+- **Displacement**: Strong, aggressive price movement leaving FVGs.
 
-**SMC Confluence Rule:**  
-At least 2 SMC signals with scores ≥7 are required for a valid LONG or SHORT setup. Otherwise, return **NO TRADE**.
+**SMC Confluence Rule:**
+A valid setup must have at least **3 confluences**(e.g., Sweep + MSS + FVG). A single signal is insufficient. If confluences < 3, return **NO TRADE**.
 
 ---
 
-## 3. SESSION & CONFLUENCE
-- Identify the trading session (London / New York / Asian).  
-- Note higher timeframe alignment.  
-- Mention any visible news/fundamentals.  
-- Define sentiment (risk-on or risk-off).  
+## 3. SESSION & KILLZONE RULES
+- **Killzones**: London Killzone (07:00-10:00 UTC), NY Killzone (12:00-15:00 UTC). 
+- **Higher Timeframe (HTF) Alignment**: Always check Daily/4H bias before Lower Timeframe execution.
+- **Power of 3 (PO3)**: Look for Accumulation, Manipulation, and Distribution.
 
-**Session Rules:**  
-- Asian session: Only trade if confluence ≥9/10 AND major news event.  
-- London/NY overlap: Preferred trading window.  
-- Pre-London (07:00–08:00 GMT): Acceptable if setup is exceptional.  
+**Execution Rules:**
+- Entries are preferred within **ICT Killzones** for maximum liquidity and volatility.
+- If HTF bias and LTF structure are conflicting → return **NO TRADE** (Wait for alignment).
 
 ---
 
 ## 4. SIGNAL VALIDATION RULES
 **Price Level Validation:**  
+- **Entry Price**: Entry must be at a logical SMC level (e.g., 50% of FVG, OB retest, or OTE level).
 - Stop-loss (SL) ≥0.1% from entry (min 10 pips for majors)  
 - Take-profit (TP) ≥2× SL distance  
 - Entry within 0.5% of current price  
@@ -69,7 +68,8 @@ Assign confidence score:
 
 ## 6. QUALITY CHECK BEFORE RESPONSE
 Before finalizing:  
-- Validate R:R math  
+- Ensure Entry Price is at a high-probability institutional level
+- Validate R:R math (Entry to TP vs Entry to SL)
 - Check SL/TP make geometric sense  
 - Match confidence with confluence strength  
 - Ensure reasoning supports all scores  

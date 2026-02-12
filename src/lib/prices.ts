@@ -1,5 +1,8 @@
 import axios from 'axios';
 
+// Helper function for delay
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 export interface PriceData {
   id: string;
   symbol: string;
@@ -51,46 +54,65 @@ const COIN_NAMES: Record<string, string> = {
 
 // Fetch ALL USDT pairs from Binance
 export async function getCryptoPrices(): Promise<PriceData[]> {
-  try {
-    // Get all tickers at once
-    const response = await axios.get('https://api.binance.com/api/v3/ticker/24hr');
-    const tickers: BinanceTicker[] = response.data;
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 1000; // 1 second
 
-    // Filter only USDT pairs and exclude stablecoins
-    const usdtPairs = tickers.filter((ticker) => {
-      const symbol = ticker.symbol;
-      if (!symbol.endsWith('USDT')) return false;
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    try {
+      // Get all tickers at once
+      const response = await axios.get('https://api.binance.com/api/v3/ticker/24hr');
+      const tickers: BinanceTicker[] = response.data;
 
-      // Exclude stablecoins and leverage tokens
-      const base = symbol.replace('USDT', '');
-      const excludeList = ['USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD', 'EUR', 'GBP', 'UP', 'DOWN', 'BEAR', 'BULL'];
-      if (excludeList.some(ex => base.includes(ex))) return false;
-      if (base.length > 6) return false; // Exclude long symbols (usually leverage tokens)
+      // Filter only USDT pairs and exclude stablecoins
+      const usdtPairs = tickers.filter((ticker) => {
+        const symbol = ticker.symbol;
+        if (!symbol.endsWith('USDT')) return false;
 
-      return true;
-    });
+        // Exclude stablecoins and leverage tokens
+        const base = symbol.replace('USDT', '');
+        const excludeList = ['USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD', 'EUR', 'GBP', 'UP', 'DOWN', 'BEAR', 'BULL'];
+        if (excludeList.some(ex => base.includes(ex))) return false;
+        if (base.length > 6) return false; // Exclude long symbols (usually leverage tokens)
 
-    return usdtPairs.map((ticker) => {
-      const symbol = ticker.symbol.replace('USDT', '');
-      const priceUsd = parseFloat(ticker.lastPrice);
-      const volume = parseFloat(ticker.volume);
-      const quoteVolume = parseFloat(ticker.quoteVolume);
+        return true;
+      });
 
-      return {
-        id: symbol.toLowerCase(),
-        symbol: symbol.toLowerCase(),
-        name: COIN_NAMES[symbol] || symbol,
-        current_price_usd: priceUsd,
-        current_price_krw: priceUsd * USD_TO_KRW,
-        price_change_percentage_24h: parseFloat(ticker.priceChangePercent),
-        volume_24h: volume,
-        quote_volume: quoteVolume,
-      };
-    });
-  } catch (error) {
-    console.error('Failed to fetch crypto prices from Binance:', error);
-    return [];
+      return usdtPairs.map((ticker) => {
+        const symbol = ticker.symbol.replace('USDT', '');
+        const priceUsd = parseFloat(ticker.lastPrice);
+        const volume = parseFloat(ticker.volume);
+        const quoteVolume = parseFloat(ticker.quoteVolume);
+
+        return {
+          id: symbol.toLowerCase(),
+          symbol: symbol.toLowerCase(),
+          name: COIN_NAMES[symbol] || symbol,
+          current_price_usd: priceUsd,
+          current_price_krw: priceUsd * USD_TO_KRW,
+          price_change_percentage_24h: parseFloat(ticker.priceChangePercent),
+          volume_24h: volume,
+          quote_volume: quoteVolume,
+        };
+      });
+    } catch (error: unknown) {
+      if (i < MAX_RETRIES - 1) {
+        if (error instanceof Error) {
+          console.warn(`Retry ${i + 1}/${MAX_RETRIES}: Failed to fetch crypto prices from Binance: ${error.message}. Retrying in ${RETRY_DELAY_MS}ms...`, error);
+        } else {
+          console.warn(`Retry ${i + 1}/${MAX_RETRIES}: Failed to fetch crypto prices from Binance:`, error, `Retrying in ${RETRY_DELAY_MS}ms...`);
+        }
+        await delay(RETRY_DELAY_MS);
+      } else {
+        // Last retry failed
+        if (error instanceof Error) {
+          console.error('Failed to fetch crypto prices from Binance after multiple retries:', error.message, error);
+        } else {
+          console.error('Failed to fetch crypto prices from Binance after multiple retries:', error);
+        }
+      }
+    }
   }
+  return []; // Return empty array if all retries fail
 }
 
 // Sort and filter crypto data

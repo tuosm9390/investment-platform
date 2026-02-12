@@ -22,7 +22,11 @@ async function test() {
     console.log('Saved HTML to naver-search.html');
 
   } catch (error: unknown) {
-    console.error('Failed:', error.message);
+    if (error instanceof Error) {
+      console.error('Failed:', error.message);
+    } else {
+      console.error('Failed:', error);
+    }
   }
 }
 

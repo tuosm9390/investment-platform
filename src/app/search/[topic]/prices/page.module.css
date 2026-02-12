@@ -723,3 +723,17 @@
   width: 100%;
   margin-top: var(--spacing-md);
 }
+
+/* AI Prediction Tab Specific Styles */
+.refreshControl {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm); /* Adjust gap as needed */
+}
+
+.usageInfo {
+  font-size: 0.75rem; /* Matching lastUpdateText */
+  color: var(--gray-400); /* Matching lastUpdateText */
+  white-space: nowrap; /* Prevent wrapping */
+  margin-right: var(--spacing-xs); /* Small spacing between text and button */
+}

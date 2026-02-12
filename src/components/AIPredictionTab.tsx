@@ -21,6 +21,7 @@ interface PredictionData {
     recommendation: string;
     trend: string;
     insights: string[];
+    entryPrice: number;
     targetPrice: number;
     stopLoss: number;
     confidence: number;
@@ -43,12 +44,16 @@ interface OHLCVData {
 // Custom AI Chart Component using Lightweight Charts
 const AICustomChart = ({
   symbol,
+  entryPrice,
   targetPrice,
-  stopLoss
+  stopLoss,
+  isBullish
 }: {
   symbol: string,
+  entryPrice: number,
   targetPrice: number,
-  stopLoss: number
+  stopLoss: number,
+  isBullish: boolean
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<LightweightCharts.IChartApi | null>(null);
@@ -72,7 +77,7 @@ const AICustomChart = ({
       },
     });
 
-    // --- Pane 0: Price & SMA ---
+    // --- Pane 0: Price & Indicators ---
     const candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
       upColor: '#26a69a',
       downColor: '#ef5350',
@@ -81,8 +86,22 @@ const AICustomChart = ({
       wickDownColor: '#ef5350',
     }, 0);
 
-    // Initialize ICT Markers Plugin for V5
-    const markersPlugin = LightweightCharts.createSeriesMarkers(candlestickSeries);
+
+
+    // EMA Series
+    const ema20Series = chart.addSeries(LightweightCharts.LineSeries, {
+      color: 'rgba(41, 98, 255, 0.7)',
+      lineWidth: 1,
+      title: 'EMA 20',
+      priceLineVisible: false,
+    }, 0);
+
+    const ema50Series = chart.addSeries(LightweightCharts.LineSeries, {
+      color: 'rgba(255, 109, 0, 0.7)',
+      lineWidth: 1,
+      title: 'EMA 50',
+      priceLineVisible: false,
+    }, 0);
 
     // --- Pane 1: RSI ---
     const rsiSeries = chart.addSeries(LightweightCharts.LineSeries, {
@@ -170,60 +189,13 @@ const AICustomChart = ({
       return results;
     };
 
-    // --- ICT Pattern Detection ---
-    const detectFVG = (data: OHLCVData[]) => {
-      const fvgs: { top: number; bottom: number; time: number; type: 'Bullish' | 'Bearish' }[] = [];
-      for (let i = 2; i < data.length; i++) {
-        if (data[i - 2].high < data[i].low) {
-          fvgs.push({
-            top: data[i].low,
-            bottom: data[i - 2].high,
-            time: data[i - 1].time,
-            type: 'Bullish'
-          });
-        } else if (data[i - 2].low > data[i].high) {
-          fvgs.push({
-            top: data[i - 2].low,
-            bottom: data[i].high,
-            time: data[i - 1].time,
-            type: 'Bearish'
-          });
-        }
-      }
-      return fvgs;
-    };
 
-    const detectSweeps = (data: OHLCVData[]) => {
-      const markers: LightweightCharts.SeriesMarker<LightweightCharts.Time>[] = [];
-      const period = 20;
-      for (let i = period; i < data.length; i++) {
-        const slice = data.slice(i - period, i);
-        const highest = Math.max(...slice.map(d => d.high));
-        const lowest = Math.min(...slice.map(d => d.low));
 
-        if (data[i].high > highest && data[i].close < highest) {
-          markers.push({
-            time: data[i].time,
-            position: 'aboveBar',
-            color: '#ef5350',
-            shape: 'arrowDown',
-            text: 'Sweep High'
-          });
-        } else if (data[i].low < lowest && data[i].close > lowest) {
-          markers.push({
-            time: data[i].time,
-            position: 'belowBar',
-            color: '#26a69a',
-            shape: 'arrowUp',
-            text: 'Sweep Low'
-          });
-        }
-      }
-      return markers;
-    };
 
     const fetchKlines = async () => {
       try {
+
+
         const binanceSymbol = symbol.toUpperCase().replace('USDT', '') + 'USDT';
         const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=4h&limit=150`);
         const klinesData = await response.json();
@@ -237,49 +209,64 @@ const AICustomChart = ({
           volume: parseFloat(d[5] as string),
         }));
 
-        candlestickSeries.setData(formattedData);
+        candlestickSeries.setData(formattedData as any);
+
+        // EMA Data
+        ema20Series.setData(calculateEMA(formattedData, 20) as any);
+        ema50Series.setData(calculateEMA(formattedData, 50) as any);
+
+
+
+
+
+
+
 
         // RSI 14
         const rsiData = calculateRSI(formattedData, 14);
-        rsiSeries.setData(rsiData);
+        rsiSeries.setData(rsiData as any);
 
         // MACD (12, 26, 9)
         const ema12 = calculateEMA(formattedData, 12);
         const ema26 = calculateEMA(formattedData, 26);
         const macdLineData = ema12.map((d, i) => ({
-          time: d.time,
+          time: d.time as LightweightCharts.Time,
           value: d.value - ema26[i].value
         }));
-        const signalLineData = calculateEMA(macdLineData.map(d => ({time: d.time, close: d.value}) as OHLCVData), 9); // Type assertion for calculateEMA
+        const signalLineData = calculateEMA(macdLineData.map(d => ({ time: d.time as number, close: d.value }) as OHLCVData), 9);
         const histogramData = macdLineData.map((d) => {
-          const signal = signalLineData.find(s => s.time === d.time);
+          const signal = signalLineData.find(s => (s.time as number) === (d.time as number));
           if (!signal) return null;
           const value = d.value - signal.value;
           return {
-            time: d.time,
+            time: d.time as LightweightCharts.Time,
             value,
             color: value >= 0 ? '#26a69a' : '#ef5350'
           };
-        }).filter((d): d is { time: number; value: number; color: string } => d !== null);
+        }).filter((d): d is { time: LightweightCharts.Time; value: number; color: string } => d !== null);
 
-        macdLineSeries.setData(macdLineData);
-        macdSignalSeries.setData(signalLineData);
-        macdHistogramSeries.setData(histogramData);
-
-
+        macdLineSeries.setData(macdLineData as any);
+        macdSignalSeries.setData(signalLineData as any);
+        macdHistogramSeries.setData(histogramData as any);
 
 
 
 
 
-        // Target/Stop Loss Lines
+
+
+        // Entry/Target/Stop Loss Lines
+        candlestickSeries.createPriceLine({
+          price: entryPrice, color: '#2962FF', lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: 'Entry (Limit)',
+        });
         candlestickSeries.createPriceLine({
           price: targetPrice, color: '#22c55e', lineWidth: 2,
           lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: 'Target',
         });
         candlestickSeries.createPriceLine({
           price: stopLoss, color: '#ef4444', lineWidth: 2,
-          lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'Stop Loss',
+          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: 'Stop Loss',
         });
 
         chart.timeScale().fitContent();
@@ -295,7 +282,7 @@ const AICustomChart = ({
     return () => {
       chart.remove();
     };
-  }, [symbol, targetPrice, stopLoss]);
+  }, [symbol, entryPrice, targetPrice, stopLoss]);
 
   return <div ref={chartContainerRef} style={{ width: '100%', height: '100%' }} />;
 };
@@ -438,17 +425,22 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
         <div className={styles.lastUpdateText}>
           {data && `업데이트: ${new Date(data.timestamp).toLocaleTimeString()}`}
         </div>
-        <button onClick={() => fetchPrediction()} disabled={loading} className={styles.secondaryButton}>
-          <RefreshCw size={12} className={loading ? styles.spinner : ''} />
-          새로고침
-        </button>
+        <div className={styles.refreshControl}>
+          <span className={styles.usageInfo}>
+            {usage.emailRegistered ? '분석 횟수: 무제한' : `남은 분석 횟수: ${3 - usage.count}회`}
+          </span>
+          <button onClick={() => fetchPrediction()} disabled={loading} className={styles.secondaryButton}>
+            <RefreshCw size={12} className={loading ? styles.spinner : ''} />
+            새로고침
+          </button>
+        </div>
       </div>
 
       {error ? (
         <div className={styles.predictionCard} style={{ textAlign: 'center', borderColor: 'var(--danger-200)' }}>
           <AlertCircle size={32} color="var(--danger)" style={{ marginBottom: '1rem' }} />
           <p style={{ color: 'var(--danger)', fontWeight: 600 }}>{error}</p>
-          <button onClick={() => fetchPrediction(true)} className={styles.primaryButton} style={{ marginTop: '1rem' }}>재시도</button>
+          <button onClick={() => fetchPrediction()} className={styles.primaryButton} style={{ marginTop: '1rem' }}>재시도</button>
         </div>
       ) : data ? (
         <>
@@ -462,12 +454,16 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
                 <h2 className={styles.recommendationText}>{data.ai.recommendation}</h2>
                 <div className={styles.priceContainer}>
                   <div className={styles.priceItem}>
+                    <span className={styles.priceLabel}>Entry</span>
+                    <span className={styles.priceValue} style={{ color: 'var(--primary-color)' }}>${data.ai.entryPrice?.toLocaleString()}</span>
+                  </div>
+                  <div className={styles.priceItem}>
                     <span className={styles.priceLabel}>Target</span>
-                    <span className={styles.priceValue} style={{ color: 'var(--success)' }}>${data.ai.targetPrice.toLocaleString()}</span>
+                    <span className={styles.priceValue} style={{ color: 'var(--success)' }}>${data.ai.targetPrice?.toLocaleString()}</span>
                   </div>
                   <div className={styles.priceItem}>
                     <span className={styles.priceLabel}>Stop Loss</span>
-                    <span className={styles.priceValue} style={{ color: 'var(--danger)' }}>${data.ai.stopLoss.toLocaleString()}</span>
+                    <span className={styles.priceValue} style={{ color: 'var(--danger)' }}>${data.ai.stopLoss?.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -524,13 +520,14 @@ export const AIPredictionTab: React.FC<AIPredictionProps> = ({ symbol }) => {
             <div className={styles.detailChartContainer} style={{ height: '650px', overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--gray-200)', background: 'var(--card-background)' }}>
               <AICustomChart
                 symbol={symbol}
+                entryPrice={data.ai.entryPrice!}
                 targetPrice={data.ai.targetPrice}
                 stopLoss={data.ai.stopLoss}
                 isBullish={isBullish}
               />
             </div>
             <p style={{ marginTop: '1rem', fontSize: '0.7rem', color: 'var(--gray-400)', textAlign: 'center' }}>
-              * 초록색 실선: AI 목표가 (Target) / 빨간색 점선: AI 손절가 (Stop Loss)
+              * 파란색 실선: 진입 지정가 (Entry) / 초록색 실선: AI 목표가 (Target) / 빨간색 점선: AI 손절가 (Stop Loss)
             </p>
 
 

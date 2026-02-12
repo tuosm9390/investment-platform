@@ -73,41 +73,53 @@ export async function GET(request: NextRequest) {
       { apiVersion: 'v1beta' }
     );
 
-    const prompt = `
-      Analyze the ${symbol} coin for investment purposes. 
-      Use technical indicators and ICT (Inner Circle Trader) concepts.
-      
-      Daily Data:
-      - Current Price: ${latestPrice}
-      - RSI (14): ${dailyRSI[dailyRSI.length - 1]?.toFixed(2)}
-      - MACD: ${dailyMACD.macdLine[dailyMACD.macdLine.length - 1]?.toFixed(4)}
-      - EMA (20): ${dailyEMA20[dailyEMA20.length - 1]?.toFixed(2)}
-      
-      4-Hour Data:
-      - RSI (14): ${fhRSI[fhRSI.length - 1]?.toFixed(2)}
-      - MACD: ${fhMACD.macdLine[fhMACD.macdLine.length - 1]?.toFixed(4)}
-      - EMA (20): ${fhEMA20[fhEMA20.length - 1]?.toFixed(2)}
-      
-      Requirements:
-      1. Analyze short-term (4h) and mid-term (Daily) trends.
-      2. Identify key ICT concepts like Market Structure Shift (MSS), Order Blocks, or Fair Value Gaps (FVG) if applicable based on the price relation to EMA.
-      3. Provide a clear investment recommendation: [Strong Buy, Buy, Hold, Sell, Strong Sell].
-      4. Give 3-4 bullet point insights in KOREAN.
-      5. Estimate Target Price and Stop Loss.
-      
-      Response format (JSON):
-      {
-        "symbol": "${symbol}",
-        "recommendation": "Buy",
-        "trend": "Bullish",
-        "insights": ["...", "..."],
-        "targetPrice": 0,
-        "stopLoss": 0,
-        "confidence": 0.8
-      }
+    const smcPromptContent = `
+You are an **Elite Quant Trader with 15+ years of prop firm experience**, specializing in SMC (Smart Money Concepts) and ICT (Inner Circle Trader) strategies. 
+Your goal is to provide **institutional-grade trading signals** with maximum precision.
+
+### CORE ANALYSIS FRAMEWORK:
+1. **Market Structure Analysis**: 
+   - Identify HTF (Daily) and LTF (4H) bias.
+   - Look for MSS/CHoCH (Change of Character) and BOS (Break of Structure).
+2. **SMC/ICT Identification**:
+   - Locate Order Blocks (OB) and Fair Value Gaps (FVG).
+   - Identify Liquidity Sweeps above/below key swing points.
+   - Observe Displacement in price movement.
+3. **Execution Rules**:
+   - Confluence Rule: Need at least 3 confluences (e.g., Sweep + MSS + FVG Retest).
+   - HTF Alignment: LTF entry must align with HTF bias.
+   - Killzone Check: Preferred entries during London/NY overlaps.
+
+### INPUT DATA FOR ${symbol}:
+- **Current Price**: ${latestPrice}
+- **Daily Context**: RSI ${dailyRSI[dailyRSI.length - 1]?.toFixed(2)}, MACD ${dailyMACD.macdLine[dailyMACD.macdLine.length - 1]?.toFixed(4)}, EMA20 ${dailyEMA20[dailyEMA20.length - 1]?.toFixed(2)}
+- **4-Hour Context**: RSI ${fhRSI[fhRSI.length - 1]?.toFixed(2)}, MACD ${fhMACD.macdLine[fhMACD.macdLine.length - 1]?.toFixed(4)}, EMA20 ${fhEMA20[fhEMA20.length - 1]?.toFixed(2)}
+
+### OUTPUT REQUIREMENTS:
+- Provide analysis in KOREAN (Insights section).
+- Use professional SMC/ICT terminology (FVG, OB, BOS, MSS, Liquidity Sweep 등).
+- Provide a clear recommendation and specific entry logic.
+- Target Price and Stop Loss must respect technical structure (e.g., SL below/above the candle that created FVG/OB).
+
+Response MUST be in this JSON format:
+{
+  "symbol": "${symbol}",
+  "recommendation": "Strong Buy | Buy | Hold | Sell | Strong Sell | No Trade",
+  "trend": "Bullish | Bearish | Neutral | Choppy",
+  "insights": [
+    "SMC 기반 추세 및 구조 분석 결과...",
+    "주요 유동성(Liquidity) 및 공급/수요 존(OB/FVG) 위치...",
+    "매수/매도 진입의 핵심 컨플루언스 근거(선정된 진입가 이유 포함)...",
+    "주의해야 할 리스크 요소 및 세션 특징"
+  ],
+  "entryPrice": number,
+  "targetPrice": number,
+  "stopLoss": number,
+  "confidence": number (0.0 to 1.0)
+}
     `;
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(smcPromptContent);
     const responseText = result.response.text();
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     const analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: 'Failed to parse AI response' };
@@ -122,8 +134,8 @@ export async function GET(request: NextRequest) {
       ai: analysis
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('AI Prediction error:', error);
-    return NextResponse.json({ error: 'FAILED_TO_ANALYZE', message: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'FAILED_TO_ANALYZE', message: error.message || '알 수 없는 오류' }, { status: 500 });
   }
 }

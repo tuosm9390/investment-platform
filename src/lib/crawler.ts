@@ -70,7 +70,11 @@ export async function crawlNews(topic: string): Promise<NewsItem[]> {
     return newsItems;
 
   } catch (error: unknown) {
-    console.error('RSS Crawling failed:', error.message);
+    if (error instanceof Error) {
+      console.error('RSS Crawling failed:', error.message);
+    } else {
+      console.error('RSS Crawling failed:', error);
+    }
     return [];
   }
 }

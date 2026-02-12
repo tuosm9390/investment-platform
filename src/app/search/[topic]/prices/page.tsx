@@ -36,6 +36,7 @@ export default function PricesPage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('volume');
   const [displayCount, setDisplayCount] = useState(10);
   const [activeTab, setActiveTab] = useState<'prices' | 'ai'>('prices');
+  const [imageErrorMap, setImageErrorMap] = useState<Set<string>>(new Set()); // Track images that failed to load
 
   const isMounted = useRef(true);
   const wsRef = useRef<WebSocket | null>(null);
@@ -321,13 +322,18 @@ export default function PricesPage() {
                       <td className={styles.rankCell}>{index + 1}</td>
                       <td className={styles.nameCell}>
                         <span className={styles.coinIconWrapper}>
-                          <Image
-                            src={`https://assets.coincap.io/assets/icons/${item.symbol}@2x.png`}
-                            alt={`${item.name} icon`}
-                            width={24}
-                            height={24}
-                            className={styles.coinIcon}
-                          />
+                          {!imageErrorMap.has(item.id) ? (
+                            <Image
+                              src={`https://assets.coincap.io/assets/icons/${item.symbol}@2x.png`}
+                              alt={`${item.name} icon`}
+                              width={24}
+                              height={24}
+                              className={styles.coinIcon}
+                              onError={() => setImageErrorMap(prev => new Set(prev).add(item.id))}
+                            />
+                          ) : (
+                            <span style={{ width: 24, height: 24, display: 'inline-block' }} /> // Transparent blank space
+                          )}
                         </span>
                         {item.name}
                       </td>
