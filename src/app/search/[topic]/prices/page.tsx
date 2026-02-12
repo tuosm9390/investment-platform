@@ -116,6 +116,34 @@ export default function PricesPage() {
             setAllCryptoPrices((prevPrices) => {
               const priceMap = new Map(data.map((t) => [t.s, t]));
 
+              // If we have no prices yet, create the list from WebSocket data
+              if (prevPrices.length === 0) {
+                const newPrices: PriceData[] = [];
+                data.forEach(ticker => {
+                  if (!ticker.s.endsWith('USDT')) return;
+                  const symbolStr = ticker.s.replace('USDT', '').toLowerCase();
+
+                  // Basic filtering like in server-side
+                  if (symbolStr.length > 6) return;
+                  const excludeList = ['usdc', 'busd', 'dai', 'tusd', 'usdp', 'fdusd'];
+                  if (excludeList.some(ex => symbolStr.includes(ex))) return;
+
+                  const priceUsd = parseFloat(ticker.c);
+                  newPrices.push({
+                    id: symbolStr,
+                    symbol: symbolStr,
+                    name: symbolStr.toUpperCase(), // Fallback name
+                    current_price_usd: priceUsd,
+                    current_price_krw: priceUsd * KRW_RATE,
+                    price_change_percentage_24h: 0, // Not provided in miniTicker
+                    volume_24h: parseFloat(ticker.v),
+                    quote_volume: parseFloat(ticker.q),
+                  });
+                });
+                return newPrices;
+              }
+
+              // Update existing prices
               return prevPrices.map((crypto) => {
                 const symbol = crypto.symbol.toUpperCase() + 'USDT';
                 const ticker = priceMap.get(symbol);

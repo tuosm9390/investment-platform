@@ -23,9 +23,12 @@ export async function GET() {
   try {
     const crypto = await getCryptoPrices();
 
-    if (crypto.length > 0) {
+    if (crypto.length === 0) {
+      console.warn('Crypto prices returned empty. Fallback might have failed or returned no data.');
+    } else {
       cachedCrypto = crypto;
       lastFetchTime = now;
+      console.log(`Successfully fetched ${crypto.length} crypto prices.`);
     }
 
     return NextResponse.json({
@@ -33,8 +36,8 @@ export async function GET() {
       stocks: cachedStocks,
       cached: false
     });
-  } catch (error) {
-    console.error('API Error:', error);
+  } catch (error: any) {
+    console.error('API Route Error:', error.message || error);
 
     // Return cached data if available
     if (cachedCrypto.length > 0) {

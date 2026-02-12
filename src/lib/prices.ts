@@ -52,32 +52,55 @@ const COIN_NAMES: Record<string, string> = {
   'THETA': 'Theta', 'VET': 'VeChain', 'ALGO': 'Algorand', 'HBAR': 'Hedera',
 };
 
+// Fetch prices from CoinCap as a fallback
+async function getCryptoPricesCoinCap(): Promise<PriceData[]> {
+  try {
+    const response = await axios.get('https://api.coincap.io/v2/assets?limit=100');
+    const data = response.data.data;
+
+    return data.map((coin: any) => {
+      const symbol = coin.symbol.toLowerCase();
+      const priceUsd = parseFloat(coin.priceUsd);
+      return {
+        id: symbol,
+        symbol: symbol,
+        name: coin.name,
+        current_price_usd: priceUsd,
+        current_price_krw: priceUsd * USD_TO_KRW,
+        price_change_percentage_24h: parseFloat(coin.changePercent24Hr),
+        volume_24h: parseFloat(coin.volumeUsd24Hr),
+        quote_volume: parseFloat(coin.volumeUsd24Hr), // Using volumeUsd as quote volume for CoinCap
+      };
+    });
+  } catch (error) {
+    console.error('Failed to fetch from CoinCap:', error);
+    return [];
+  }
+}
+
 // Fetch ALL USDT pairs from Binance
 export async function getCryptoPrices(): Promise<PriceData[]> {
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY_MS = 1000; // 1 second
+  const MAX_RETRIES = 2; // Reduced retries for faster fallback
+  const RETRY_DELAY_MS = 1000;
 
   for (let i = 0; i < MAX_RETRIES; i++) {
     try {
-      // Get all tickers at once
-      const response = await axios.get('https://api.binance.com/api/v3/ticker/24hr');
+      const response = await axios.get('https://api.binance.com/api/v3/ticker/24hr', {
+        timeout: 5000 // Add timeout to fail fast
+      });
       const tickers: BinanceTicker[] = response.data;
 
-      // Filter only USDT pairs and exclude stablecoins
       const usdtPairs = tickers.filter((ticker) => {
         const symbol = ticker.symbol;
         if (!symbol.endsWith('USDT')) return false;
-
-        // Exclude stablecoins and leverage tokens
         const base = symbol.replace('USDT', '');
         const excludeList = ['USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'FDUSD', 'EUR', 'GBP', 'UP', 'DOWN', 'BEAR', 'BULL'];
         if (excludeList.some(ex => base.includes(ex))) return false;
-        if (base.length > 6) return false; // Exclude long symbols (usually leverage tokens)
-
+        if (base.length > 6) return false;
         return true;
       });
 
-      return usdtPairs.map((ticker) => {
+      const result = usdtPairs.map((ticker) => {
         const symbol = ticker.symbol.replace('USDT', '');
         const priceUsd = parseFloat(ticker.lastPrice);
         const volume = parseFloat(ticker.volume);
@@ -94,25 +117,17 @@ export async function getCryptoPrices(): Promise<PriceData[]> {
           quote_volume: quoteVolume,
         };
       });
-    } catch (error: unknown) {
-      if (i < MAX_RETRIES - 1) {
-        if (error instanceof Error) {
-          console.warn(`Retry ${i + 1}/${MAX_RETRIES}: Failed to fetch crypto prices from Binance: ${error.message}. Retrying in ${RETRY_DELAY_MS}ms...`, error);
-        } else {
-          console.warn(`Retry ${i + 1}/${MAX_RETRIES}: Failed to fetch crypto prices from Binance:`, error, `Retrying in ${RETRY_DELAY_MS}ms...`);
-        }
-        await delay(RETRY_DELAY_MS);
-      } else {
-        // Last retry failed
-        if (error instanceof Error) {
-          console.error('Failed to fetch crypto prices from Binance after multiple retries:', error.message, error);
-        } else {
-          console.error('Failed to fetch crypto prices from Binance after multiple retries:', error);
-        }
-      }
+
+      if (result.length > 0) return result;
+    } catch (error: any) {
+      console.warn(`Binance attempt ${i + 1} failed: ${error.message}`);
+      if (i < MAX_RETRIES - 1) await delay(RETRY_DELAY_MS);
     }
   }
-  return []; // Return empty array if all retries fail
+
+  // Fallback to CoinCap if Binance fails
+  console.log('Falling back to CoinCap API...');
+  return getCryptoPricesCoinCap();
 }
 
 // Sort and filter crypto data
