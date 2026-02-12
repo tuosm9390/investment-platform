@@ -13,11 +13,13 @@ const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: 'losers', label: '하락률 상위' },
 ];
 
-interface BinanceMiniTicker {
+interface BinanceTickerStream {
   e: string; // Event type
   E: number; // Event time
   s: string; // Symbol
-  c: string; // Close price
+  p: string; // Price change
+  P: string; // Price change percent
+  c: string; // Last price
   o: string; // Open price
   h: string; // High price
   l: string; // Low price
@@ -110,7 +112,7 @@ export default function PricesPage() {
         if (!isMounted.current) return;
 
         try {
-          const data: BinanceMiniTicker[] = JSON.parse(event.data);
+          const data: BinanceTickerStream[] = JSON.parse(event.data);
 
           if (Array.isArray(data)) {
             setAllCryptoPrices((prevPrices) => {
@@ -135,7 +137,7 @@ export default function PricesPage() {
                     name: symbolStr.toUpperCase(), // Fallback name
                     current_price_usd: priceUsd,
                     current_price_krw: priceUsd * KRW_RATE,
-                    price_change_percentage_24h: 0, // Not provided in miniTicker
+                    price_change_percentage_24h: parseFloat(ticker.P),
                     volume_24h: parseFloat(ticker.v),
                     quote_volume: parseFloat(ticker.q),
                   });
@@ -154,6 +156,7 @@ export default function PricesPage() {
                     ...crypto,
                     current_price_usd: newPriceUsd,
                     current_price_krw: newPriceUsd * KRW_RATE,
+                    price_change_percentage_24h: parseFloat(ticker.P) || crypto.price_change_percentage_24h,
                     quote_volume: parseFloat(ticker.q) || crypto.quote_volume,
                   };
                 }

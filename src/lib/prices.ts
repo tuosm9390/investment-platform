@@ -175,8 +175,8 @@ export function getTradingViewSymbol(cryptoId: string): string {
   return `BINANCE:${cryptoId.toUpperCase()}USDT`;
 }
 
-// Binance WebSocket stream URL for real-time prices
-export const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws/!miniTicker@arr';
+// Binance WebSocket stream URL for real-time prices (using 24hr ticker for percentage change)
+export const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws/!ticker@arr';
 
 // Exchange rate constant
 export const KRW_RATE = USD_TO_KRW;
