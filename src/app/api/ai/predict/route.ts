@@ -3,7 +3,7 @@ import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { calculateRSI, calculateMACD, calculateEMA } from '@/lib/indicators';
 
-const BINANCE_BASE_URL = 'https://api.binance.com/api/v3';
+const BINANCE_BASE_URL = 'https://api.binance.us/api/v3';
 
 interface OHLCVData {
   time: number;
