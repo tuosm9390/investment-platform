@@ -31,8 +31,29 @@ interface BinanceTicker {
   quoteVolume: string;
 }
 
-// Exchange rate (approximate)
-const USD_TO_KRW = 1350;
+// Exchange rate management
+let cachedRate: number | null = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+export async function getExchangeRate(): Promise<number> {
+  const now = Date.now();
+  if (cachedRate && (now - lastFetchTime < CACHE_DURATION)) {
+    return cachedRate;
+  }
+  try {
+    const response = await axios.get('https://api.frankfurter.app/latest?from=USD&to=KRW');
+    cachedRate = response.data.rates.KRW;
+    lastFetchTime = now;
+    return cachedRate!;
+  } catch (error) {
+    console.error('Failed to fetch exchange rate:', error);
+    return 1400; // Fallback
+  }
+}
+
+// Helper constant for synchronous usage (fallback)
+export const KRW_RATE = 1400;
 
 // Filter types
 export type FilterType = 'volume' | 'price' | 'gainers' | 'losers';
@@ -54,6 +75,7 @@ const COIN_NAMES: Record<string, string> = {
 
 // Fetch prices from CoinCap as a fallback
 async function getCryptoPricesCoinCap(): Promise<PriceData[]> {
+  const exchangeRate = await getExchangeRate();
   try {
     const response = await axios.get('https://api.coincap.io/v2/assets?limit=100');
     const data = response.data.data;
@@ -66,7 +88,7 @@ async function getCryptoPricesCoinCap(): Promise<PriceData[]> {
         symbol: symbol,
         name: coin.name,
         current_price_usd: priceUsd,
-        current_price_krw: priceUsd * USD_TO_KRW,
+        current_price_krw: priceUsd * exchangeRate,
         price_change_percentage_24h: parseFloat(coin.changePercent24Hr),
         volume_24h: parseFloat(coin.volumeUsd24Hr),
         quote_volume: parseFloat(coin.volumeUsd24Hr), // Using volumeUsd as quote volume for CoinCap
@@ -80,6 +102,7 @@ async function getCryptoPricesCoinCap(): Promise<PriceData[]> {
 
 // Fetch ALL USDT pairs from Binance
 export async function getCryptoPrices(): Promise<PriceData[]> {
+  const exchangeRate = await getExchangeRate();
   const MAX_RETRIES = 2; // Reduced retries for faster fallback
   const RETRY_DELAY_MS = 1000;
 
@@ -111,7 +134,7 @@ export async function getCryptoPrices(): Promise<PriceData[]> {
           symbol: symbol.toLowerCase(),
           name: COIN_NAMES[symbol] || symbol,
           current_price_usd: priceUsd,
-          current_price_krw: priceUsd * USD_TO_KRW,
+          current_price_krw: priceUsd * exchangeRate, // Use real-time rate
           price_change_percentage_24h: parseFloat(ticker.priceChangePercent),
           volume_24h: volume,
           quote_volume: quoteVolume,
@@ -242,6 +265,3 @@ export function getTradingViewSymbol(cryptoId: string): string {
 
 // Binance WebSocket stream URL for real-time prices (using 24hr ticker for percentage change)
 export const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws/!ticker@arr';
-
-// Exchange rate constant
-export const KRW_RATE = USD_TO_KRW;

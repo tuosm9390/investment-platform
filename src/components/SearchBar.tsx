@@ -1,37 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Search, TrendingUp, Clock, X } from 'lucide-react';
 import styles from './SearchBar.module.css';
 
-// 인기 검색어 & 자동완성 데이터
-const SUGGESTIONS = [
-  { name: '비트코인', symbol: 'BTC', type: 'crypto' as const },
-  { name: '이더리움', symbol: 'ETH', type: 'crypto' as const },
-  { name: '솔라나', symbol: 'SOL', type: 'crypto' as const },
-  { name: '리플', symbol: 'XRP', type: 'crypto' as const },
-  { name: '도지코인', symbol: 'DOGE', type: 'crypto' as const },
-  { name: '에이다', symbol: 'ADA', type: 'crypto' as const },
-  { name: '아발란체', symbol: 'AVAX', type: 'crypto' as const },
-  { name: '폴카닷', symbol: 'DOT', type: 'crypto' as const },
-  { name: '체인링크', symbol: 'LINK', type: 'crypto' as const },
-  { name: '유니스왑', symbol: 'UNI', type: 'crypto' as const },
-  { name: '니어', symbol: 'NEAR', type: 'crypto' as const },
-  { name: '앱토스', symbol: 'APT', type: 'crypto' as const },
-  { name: '수이', symbol: 'SUI', type: 'crypto' as const },
-  { name: '시바이누', symbol: 'SHIB', type: 'crypto' as const },
-  { name: '페페', symbol: 'PEPE', type: 'crypto' as const },
-  { name: '삼성전자', symbol: '005930', type: 'stock' as const },
-  { name: 'SK하이닉스', symbol: '000660', type: 'stock' as const },
-  { name: 'LG에너지솔루션', symbol: '373220', type: 'stock' as const },
-  { name: '현대자동차', symbol: '005380', type: 'stock' as const },
-  { name: 'NAVER', symbol: '035420', type: 'stock' as const },
-  { name: '카카오', symbol: '035720', type: 'stock' as const },
-  { name: '테슬라', symbol: 'TSLA', type: 'stock' as const },
-  { name: '애플', symbol: 'AAPL', type: 'stock' as const },
-  { name: '엔비디아', symbol: 'NVDA', type: 'stock' as const },
-];
+import { SUGGESTIONS } from '@/data/suggestions';
+
+// 인기 검색어 & 자동완성 데이터 (removed local declaration)
 
 const RECENT_KEY = 'invesight_recent_searches';
 const MAX_RECENT = 5;
@@ -58,6 +34,8 @@ export default function SearchBar() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const router = useRouter();
+  const params = useParams();
+  const topic = typeof params?.topic === 'string' ? decodeURIComponent(params.topic) : '';
   const containerRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +43,13 @@ export default function SearchBar() {
   useEffect(() => {
     setRecentSearches(getRecentSearches());
   }, []);
+
+  // URL topic 변경 시 검색창 업데이트
+  useEffect(() => {
+    if (topic) {
+      setQuery(topic);
+    }
+  }, [topic]);
 
   // 외부 클릭 시 닫기
   useEffect(() => {
@@ -88,22 +73,39 @@ export default function SearchBar() {
   const showRecent = !query.trim() && recentSearches.length > 0;
   const hasResults = filteredSuggestions.length > 0 || showRecent;
 
-  const handleSearch = useCallback((searchQuery: string) => {
+  const handleSearch = useCallback((searchQuery: string, symbol?: string, type?: 'crypto' | 'stock') => {
     if (searchQuery.trim()) {
       saveRecentSearch(searchQuery.trim());
       setRecentSearches(getRecentSearches());
       setIsOpen(false);
       setQuery('');
-      router.push(`/search/${encodeURIComponent(searchQuery.trim())}`);
+
+      let url = `/search/${encodeURIComponent(searchQuery.trim())}`;
+
+      // 코인/주식 심볼이 특정된 경우 쿼리 파라미터로 전달 (뉴스 페이지로 이동)
+      if (symbol) {
+        url += `?coin=${symbol.toLowerCase()}`;
+      } else if (type === 'crypto' || type === 'stock') {
+        // 타입은 있지만 심볼이 없는 경우 처리 (현재 로직 유지)
+      }
+
+      router.push(url);
     }
   }, [router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeIndex >= 0 && filteredSuggestions[activeIndex]) {
-      handleSearch(filteredSuggestions[activeIndex].name);
+      const item = filteredSuggestions[activeIndex];
+      handleSearch(item.name, item.symbol, item.type);
     } else {
-      handleSearch(query);
+      // 입력된 검색어와 정확히 일치하는 제안이 있는지 확인
+      const match = SUGGESTIONS.find(s => s.name.toLowerCase() === query.trim().toLowerCase() || s.symbol.toLowerCase() === query.trim().toLowerCase());
+      if (match) {
+        handleSearch(match.name, match.symbol, match.type);
+      } else {
+        handleSearch(query);
+      }
     }
   };
 
@@ -174,7 +176,7 @@ export default function SearchBar() {
                   key={`${item.symbol}-${item.name}`}
                   type="button"
                   className={`${styles.dropdownItem} ${index === activeIndex ? styles.dropdownItemActive : ''}`}
-                  onClick={() => handleSearch(item.name)}
+                  onClick={() => handleSearch(item.name, item.symbol, item.type)}
                   onMouseEnter={() => setActiveIndex(index)}
                 >
                   <span className={styles.suggestionIcon}>
@@ -203,18 +205,21 @@ export default function SearchBar() {
                   전체 삭제
                 </button>
               </div>
-              {recentSearches.map((item, index) => (
-                <button
-                  key={item}
-                  type="button"
-                  className={`${styles.dropdownItem} ${index === activeIndex ? styles.dropdownItemActive : ''}`}
-                  onClick={() => handleSearch(item)}
-                  onMouseEnter={() => setActiveIndex(index)}
-                >
-                  <span className={styles.suggestionIcon}><Clock size={14} /></span>
-                  <span className={styles.suggestionName}>{item}</span>
-                </button>
-              ))}
+              {recentSearches.map((item, index) => {
+                const match = SUGGESTIONS.find(s => s.name === item || s.symbol === item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    className={`${styles.dropdownItem} ${index === activeIndex ? styles.dropdownItemActive : ''}`}
+                    onClick={() => handleSearch(item, match?.symbol, match?.type)}
+                    onMouseEnter={() => setActiveIndex(index)}
+                  >
+                    <span className={styles.suggestionIcon}><Clock size={14} /></span>
+                    <span className={styles.suggestionName}>{item}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -229,7 +234,7 @@ export default function SearchBar() {
                   key={`popular-${item.symbol}`}
                   type="button"
                   className={`${styles.dropdownItem} ${(showRecent ? recentSearches.length : 0) + index === activeIndex ? styles.dropdownItemActive : ''}`}
-                  onClick={() => handleSearch(item.name)}
+                  onClick={() => handleSearch(item.name, item.symbol, item.type)}
                 >
                   <span className={styles.suggestionIcon}>🪙</span>
                   <span className={styles.suggestionName}>{item.name}</span>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { TrendingUp, TrendingDown, ArrowRight, Zap, Activity } from 'lucide-react';
 import styles from './MarketDashboard.module.css';
+import { getExchangeRate } from '@/lib/prices';
 
 interface CoinData {
   symbol: string;
@@ -23,15 +24,21 @@ const COIN_NAMES: Record<string, string> = {
   PEPE: '페페', SUI: '수이', ARB: '아비트럼', OP: '옵티미즘',
 };
 
-const KRW_RATE = 1350;
-
 export const MarketDashboard: React.FC = () => {
   const [topCoins, setTopCoins] = useState<CoinData[]>([]);
   const [gainers, setGainers] = useState<CoinData[]>([]);
   const [losers, setLosers] = useState<CoinData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [krwRate, setKrwRate] = useState(1400); // Default fallback
   const isMounted = useRef(true);
+
+  // 환율 조회
+  useEffect(() => {
+    getExchangeRate().then(rate => {
+      if (isMounted.current) setKrwRate(rate);
+    });
+  }, []);
 
   const fetchMarketData = useCallback(async () => {
     try {
@@ -91,7 +98,7 @@ export const MarketDashboard: React.FC = () => {
   };
 
   const formatKRW = (price: number) => {
-    return `₩${Math.round(price * KRW_RATE).toLocaleString('ko-KR')}`;
+    return `₩${Math.round(price * krwRate).toLocaleString('ko-KR')}`;
   };
 
   if (isLoading) {
@@ -123,7 +130,7 @@ export const MarketDashboard: React.FC = () => {
           <h2 className={styles.sectionTitle}>
             <Activity size={18} /> 거래량 TOP 5
           </h2>
-          <Link href="/search/비트코인/prices" className={styles.moreLink}>
+          <Link href="/search/비트코인?coin=btc" className={styles.moreLink}>
             전체 시세 보기 <ArrowRight size={14} />
           </Link>
         </div>
@@ -131,7 +138,7 @@ export const MarketDashboard: React.FC = () => {
           {topCoins.map((coin) => (
             <Link
               key={coin.symbol}
-              href={`/search/${encodeURIComponent(coin.name)}/prices?coin=${coin.symbol}`}
+              href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
               className={styles.coinCard}
             >
               <div className={styles.coinHeader}>
@@ -177,7 +184,7 @@ export const MarketDashboard: React.FC = () => {
             {gainers.map((coin) => (
               <Link
                 key={coin.symbol}
-                href={`/search/${encodeURIComponent(coin.name)}/prices?coin=${coin.symbol}`}
+                href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
                 className={styles.trendItem}
               >
                 <span className={styles.trendName}>
@@ -199,7 +206,7 @@ export const MarketDashboard: React.FC = () => {
             {losers.map((coin) => (
               <Link
                 key={coin.symbol}
-                href={`/search/${encodeURIComponent(coin.name)}/prices?coin=${coin.symbol}`}
+                href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
                 className={styles.trendItem}
               >
                 <span className={styles.trendName}>

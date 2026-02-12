@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { PriceData, StockPriceData, BINANCE_WS_URL, KRW_RATE, FilterType, filterCryptoData } from '@/lib/prices';
 import styles from './page.module.css';
@@ -33,8 +33,18 @@ export default function PricesPage() {
   const [allCryptoPrices, setAllCryptoPrices] = useState<PriceData[]>([]);
   const [stockPrices, setStockPrices] = useState<StockPriceData[]>([]);
   const searchParams = useSearchParams();
+  const params = useParams();
   const coinParam = searchParams.get('coin');
-  const [selectedCrypto, setSelectedCrypto] = useState<string>(coinParam?.toLowerCase() || 'btc');
+
+  // Topic 파라미터 처리 (URL 디코딩 + 배열 처리)
+  const topicParam = decodeURIComponent(Array.isArray(params.topic) ? params.topic[0] : params.topic || '');
+  // Topic이 심볼 형태(알파벳/숫자 2-6자)인지 확인
+  const isTopicSymbol = /^[a-zA-Z0-9]{2,6}$/.test(topicParam);
+
+  // 초기 코인 설정: 쿼리 파라미터 > 토픽(심볼일 경우) > 기본값(btc)
+  const initialCrypto = coinParam?.toLowerCase() || (isTopicSymbol ? topicParam.toLowerCase() : 'btc');
+
+  const [selectedCrypto, setSelectedCrypto] = useState<string>(initialCrypto);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +55,14 @@ export default function PricesPage() {
   const [imageErrorMap, setImageErrorMap] = useState<Set<string>>(new Set());
 
   // TradingView 심볼 — 서버에서 USD/USDT 존재 여부 검증 후 설정
-  const [tradingViewSymbol, setTradingViewSymbol] = useState<string>(`${(coinParam || 'btc').toUpperCase()}USD`);
+  const [tradingViewSymbol, setTradingViewSymbol] = useState<string>(`${initialCrypto.toUpperCase()}USD`);
+
+  // URL 파라미터 변경 시 상태 업데이트 (클라이언트 네비게이션 대응)
+  useEffect(() => {
+    const newCrypto = coinParam?.toLowerCase() || (isTopicSymbol ? topicParam.toLowerCase() : 'btc');
+    setSelectedCrypto(newCrypto);
+    setTradingViewSymbol(`${newCrypto.toUpperCase()}USD`);
+  }, [coinParam, topicParam, isTopicSymbol]);
 
   useEffect(() => {
     let cancelled = false;

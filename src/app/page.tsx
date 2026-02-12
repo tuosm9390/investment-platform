@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import SearchBar from '@/components/SearchBar';
+import { SUGGESTIONS } from '@/data/suggestions';
 import { MarketDashboard } from '@/components/MarketDashboard';
 import styles from './page.module.css';
 
@@ -15,11 +17,18 @@ export default function Home() {
         </div>
         <div className={styles.tags}>
           <span className={styles.tagLabel}>인기 검색</span>
-          {['비트코인', '이더리움', '삼성전자', '솔라나', '리플'].map((tag) => (
-            <a key={tag} href={`/search/${tag}`} className={styles.tag}>
-              {tag}
-            </a>
-          ))}
+          {['비트코인', '이더리움', '삼성전자', '솔라나', '리플'].map((tag) => {
+            const suggestion = SUGGESTIONS.find(s => s.name === tag);
+            const href = suggestion
+              ? `/search/${encodeURIComponent(tag)}?coin=${suggestion.symbol.toLowerCase()}`
+              : `/search/${encodeURIComponent(tag)}`;
+
+            return (
+              <Link key={tag} href={href} className={styles.tag}>
+                {tag}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
