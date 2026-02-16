@@ -17,7 +17,7 @@ export default function Home() {
         </div>
         <div className={styles.tags}>
           <span className={styles.tagLabel}>인기 검색</span>
-          {['비트코인', '이더리움', '삼성전자', '솔라나', '리플'].map((tag) => {
+          {['비트코인', '이더리움', '솔라나', '리플', '도지코인'].map((tag) => {
             const suggestion = SUGGESTIONS.find(s => s.name === tag);
             const href = suggestion
               ? `/search/${encodeURIComponent(tag)}?coin=${suggestion.symbol.toLowerCase()}`

@@ -1,12 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { ArrowUp, ArrowDown, RefreshCw, AlertCircle, TrendingUp, Bitcoin, Activity, DollarSign, Wallet, Heart, Bell } from 'lucide-react';
 import { useSearchParams, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { PriceData, StockPriceData, BINANCE_WS_URL, KRW_RATE, FilterType, filterCryptoData } from '@/lib/prices';
+import { useWatchlist } from '@/hooks/useWatchlist';
+import { usePriceAlerts } from '@/hooks/usePriceAlerts';
+import { usePortfolio } from '@/hooks/usePortfolio';
 import styles from './page.module.css';
 import ErrorBanner from '@/components/ErrorBanner';
 import { AIPredictionTab } from '@/components/AIPredictionTab';
+import { PriceAlertDialog } from '@/components/PriceAlertDialog';
+import { PortfolioDialog } from '@/components/PortfolioDialog';
 
 const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
   { value: 'volume', label: '거래대금순' },
@@ -53,6 +59,44 @@ export default function PricesPage() {
   const [displayCount, setDisplayCount] = useState(10);
   const [activeTab, setActiveTab] = useState<'prices' | 'ai'>('prices');
   const [imageErrorMap, setImageErrorMap] = useState<Set<string>>(new Set());
+  const { watchlist, toggleWatchlist, isInWatchlist } = useWatchlist();
+  const { alerts, addAlert, removeAlert, requestPermission } = usePriceAlerts();
+  const { updatePosition, getPosition } = usePortfolio();
+
+  // Alert Dialog State
+  const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
+  const [isPortfolioDialogOpen, setIsPortfolioDialogOpen] = useState(false);
+  const [activeSymbol, setActiveSymbol] = useState('');
+  const [activePrice, setActivePrice] = useState(0);
+
+  const handleOpenAlert = (symbol: string, currentPrice: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveSymbol(symbol);
+    setActivePrice(currentPrice);
+    setIsAlertDialogOpen(true);
+  };
+
+  const handleOpenPortfolio = (symbol: string, currentPrice: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveSymbol(symbol);
+    setActivePrice(currentPrice);
+    setIsPortfolioDialogOpen(true);
+  };
+
+  const handleAlertSubmit = async (targetPrice: number) => {
+    const granted = await requestPermission();
+    if (granted) {
+      addAlert(activeSymbol, targetPrice, activePrice);
+    }
+  };
+
+  const handlePortfolioSubmit = (quantity: number, buyPrice: number) => {
+    updatePosition(activeSymbol, quantity, buyPrice);
+  };
+
+  const getActiveAlert = (symbol: string) => {
+    return alerts.find(a => a.symbol === symbol.toUpperCase() && a.isActive);
+  };
 
   // TradingView 심볼 — 서버에서 USD/USDT 존재 여부 검증 후 설정
   const [tradingViewSymbol, setTradingViewSymbol] = useState<string>(`${initialCrypto.toUpperCase()}USD`);
@@ -379,6 +423,9 @@ export default function PricesPage() {
               <table className={styles.table}>
                 <thead>
                   <tr>
+                    <th className={styles.watchlistHeader}></th>
+                    <th className={styles.alertHeader}></th>
+                    <th className={styles.portfolioHeader}></th>
                     <th>#</th>
                     <th>이름</th>
                     <th>심볼</th>
@@ -395,6 +442,47 @@ export default function PricesPage() {
                       className={`${styles.clickableRow} ${selectedCrypto === item.id ? styles.selectedRow : ''}`}
                       onClick={() => setSelectedCrypto(item.id)}
                     >
+                      <td className={styles.watchlistCell}>
+                        <button
+                          className={styles.watchlistButton}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleWatchlist(item.symbol);
+                          }}
+                        >
+                          <Heart
+                            size={16}
+                            fill={isInWatchlist(item.symbol) ? 'var(--primary-color)' : 'none'}
+                            color={isInWatchlist(item.symbol) ? 'var(--primary-color)' : 'var(--gray-400)'}
+                          />
+                        </button>
+                      </td>
+                      <td className={styles.alertCell}>
+                        <button
+                          className={styles.alertButton}
+                          onClick={(e) => handleOpenAlert(item.symbol, item.current_price_usd, e)}
+                          title={getActiveAlert(item.symbol) ? `알림 설정됨: $${getActiveAlert(item.symbol)?.targetPrice.toLocaleString()}` : "가격 알림 설정"}
+                        >
+                          <Bell
+                            size={16}
+                            fill={getActiveAlert(item.symbol) ? 'var(--warning)' : 'none'}
+                            color={getActiveAlert(item.symbol) ? 'var(--warning)' : 'var(--gray-400)'}
+                          />
+                        </button>
+                      </td>
+                      <td className={styles.portfolioCell}>
+                        <button
+                          className={styles.portfolioButton}
+                          onClick={(e) => handleOpenPortfolio(item.symbol, item.current_price_usd, e)}
+                          title={getPosition(item.symbol) ? `보유 중: ${getPosition(item.symbol)?.quantity}개` : "포트폴리오 추가"}
+                        >
+                          <Wallet
+                            size={16}
+                            fill={getPosition(item.symbol) ? 'var(--success)' : 'none'}
+                            color={getPosition(item.symbol) ? 'var(--success)' : 'var(--gray-400)'}
+                          />
+                        </button>
+                      </td>
                       <td className={styles.rankCell}>{index + 1}</td>
                       <td className={styles.nameCell}>
                         <span className={styles.coinIconWrapper}>
@@ -414,12 +502,12 @@ export default function PricesPage() {
                         {item.name}
                       </td>
                       <td className={styles.symbolCell}>{item.symbol.toUpperCase()}</td>
-                      <td className={styles.alignRight}>{formatUSD(item.current_price_usd)}</td>
-                      <td className={styles.alignRight}>{formatKRW(item.current_price_krw)}</td>
-                      <td className={`${styles.alignRight} ${item.price_change_percentage_24h >= 0 ? styles.positive : styles.negative}`}>
+                      <td className={`${styles.alignRight} ${styles.priceUsdCell}`}>{formatUSD(item.current_price_usd)}</td>
+                      <td className={`${styles.alignRight} ${styles.priceKrwCell}`}>{formatKRW(item.current_price_krw)}</td>
+                      <td className={`${styles.alignRight} ${styles.changeCell} ${item.price_change_percentage_24h >= 0 ? styles.positive : styles.negative}`}>
                         {item.price_change_percentage_24h >= 0 ? '+' : ''}{item.price_change_percentage_24h.toFixed(2)}%
                       </td>
-                      <td className={styles.alignRight}>{formatVolume(item.quote_volume)}</td>
+                      <td className={`${styles.alignRight} ${styles.volumeCell}`}>{formatVolume(item.quote_volume)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -443,37 +531,36 @@ export default function PricesPage() {
         <AIPredictionTab symbol={allCryptoPrices.find(c => c.id === selectedCrypto)?.symbol.toUpperCase() || 'BTC'} />
       )}
 
-      {/* Stock Prices */}
+      <PriceAlertDialog
+        isOpen={isAlertDialogOpen}
+        onClose={() => setIsAlertDialogOpen(false)}
+        onSubmit={handleAlertSubmit}
+        symbol={activeSymbol}
+        currentPrice={activePrice}
+      />
+
+      <PortfolioDialog
+        isOpen={isPortfolioDialogOpen}
+        onClose={() => setIsPortfolioDialogOpen(false)}
+        onSubmit={handlePortfolioSubmit}
+        symbol={activeSymbol}
+        currentPrice={activePrice}
+      />
+
+      {/* Stock Section — Coming Soon */}
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>📈 주요 주식 시세</h2>
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>종목코드</th>
-                <th className={styles.alignRight}>현재가</th>
-                <th className={styles.alignRight}>24시간 변동</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stockPrices.map((item) => (
-                <tr key={item.id}>
-                  <td className={styles.nameCell}>{item.name}</td>
-                  <td className={styles.symbolCell}>{item.symbol}</td>
-                  <td className={styles.alignRight}>{formatKRW(item.current_price)}</td>
-                  <td className={`${styles.alignRight} ${item.price_change_percentage_24h >= 0 ? styles.positive : styles.negative}`}>
-                    {item.price_change_percentage_24h >= 0 ? '+' : ''}{item.price_change_percentage_24h.toFixed(2)}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className={styles.comingSoonCard}>
+          <span className={styles.comingSoonIcon}>📈</span>
+          <h3 className={styles.comingSoonTitle}>주식 시세 서비스</h3>
+          <p className={styles.comingSoonText}>
+            한국 및 해외 주식 실시간 시세 서비스가 곧 추가될 예정입니다.
+          </p>
+          <span className={styles.comingSoonBadge}>Coming Soon</span>
         </div>
       </section>
 
       <p className={styles.disclaimer}>
-        * 암호화폐 시세는 Binance WebSocket API 제공 (실시간). 주식 시세는 예시 데이터입니다.
+        * 암호화폐 시세는 Binance WebSocket API를 통해 실시간 제공됩니다.
       </p>
     </div>
   );

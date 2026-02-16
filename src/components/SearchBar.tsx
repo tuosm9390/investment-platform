@@ -65,8 +65,10 @@ export default function SearchBar() {
   // 자동완성 필터링 (한국어 이름 + 영문 심볼 모두 검색)
   const filteredSuggestions = query.trim()
     ? SUGGESTIONS.filter(s =>
-      s.name.toLowerCase().includes(query.toLowerCase()) ||
-      s.symbol.toLowerCase().includes(query.toLowerCase())
+      s.type === 'crypto' && (
+        s.name.toLowerCase().includes(query.toLowerCase()) ||
+        s.symbol.toLowerCase().includes(query.toLowerCase())
+      )
     ).slice(0, 8)
     : [];
 
@@ -137,7 +139,7 @@ export default function SearchBar() {
           ref={inputRef}
           type="text"
           className={styles.input}
-          placeholder="코인이나 주식을 검색하세요 (예: 비트코인, BTC, 삼성전자)"
+          placeholder="코인을 검색하세요 (예: 비트코인, BTC, 이더리움)"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

@@ -60,7 +60,7 @@ export const InvestmentDisclaimer: React.FC<InvestmentDisclaimerProps> = ({ vari
               <strong>AI 한계:</strong> AI 분석은 과거 데이터와 기술 지표를 기반으로 하며, 미래 가격을 보장하지 않습니다. 예측 정확도는 시장 상황에 따라 크게 달라질 수 있습니다.
             </li>
             <li>
-              <strong>투자 위험:</strong> 암호화폐 및 주식 투자는 원금 손실의 위험이 있습니다. 특히 암호화폐는 높은 변동성으로 인해 단시간에 큰 손실이 발생할 수 있습니다.
+              <strong>투자 위험:</strong> 암호화폐 투자는 원금 손실의 위험이 있습니다. 특히 암호화폐는 높은 변동성으로 인해 단시간에 큰 손실이 발생할 수 있습니다.
             </li>
             <li>
               <strong>자기 책임 원칙:</strong> 투자 판단은 반드시 본인의 분석과 판단에 따라 이루어져야 합니다. 본 서비스의 분석 결과만을 근거로 투자하지 마세요.

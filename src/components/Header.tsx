@@ -64,9 +64,9 @@ export default function Header() {
       </Link>
 
       <nav className={styles.nav}>
-        <Link href="/search/stock" className={styles.navLink}>
-          주식
-        </Link>
+        <span className={styles.navLink} style={{ opacity: 0.5, cursor: 'default', position: 'relative' }}>
+          주식 <span style={{ fontSize: '0.5rem', background: 'var(--primary-color)', color: '#fff', padding: '1px 4px', borderRadius: '4px', marginLeft: '2px', verticalAlign: 'super' }}>Soon</span>
+        </span>
         <Link href="/search/crypto" className={styles.navLink}>
           암호화폐
         </Link>

@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { TrendingUp, TrendingDown, ArrowRight, Zap, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowRight, Zap, Activity, Heart, Wallet, PieChart } from 'lucide-react';
 import styles from './MarketDashboard.module.css';
 import { getExchangeRate } from '@/lib/prices';
+import { useWatchlist } from '@/hooks/useWatchlist';
+import { usePortfolio } from '@/hooks/usePortfolio';
 
 interface CoinData {
   symbol: string;
@@ -28,6 +30,9 @@ export const MarketDashboard: React.FC = () => {
   const [topCoins, setTopCoins] = useState<CoinData[]>([]);
   const [gainers, setGainers] = useState<CoinData[]>([]);
   const [losers, setLosers] = useState<CoinData[]>([]);
+  const { watchlist } = useWatchlist();
+  const { portfolio, getTotalValue } = usePortfolio();
+  const [allCoins, setAllCoins] = useState<CoinData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [krwRate, setKrwRate] = useState(1400); // Default fallback
@@ -66,6 +71,8 @@ export const MarketDashboard: React.FC = () => {
           quoteVolume: parseFloat(t.quoteVolume),
         }));
 
+      setAllCoins(usdtPairs);
+
       // TOP 5 by volume
       const sorted = [...usdtPairs].sort((a: CoinData, b: CoinData) => b.quoteVolume - a.quoteVolume);
       setTopCoins(sorted.slice(0, 5));
@@ -101,6 +108,21 @@ export const MarketDashboard: React.FC = () => {
     return `₩${Math.round(price * krwRate).toLocaleString('ko-KR')}`;
   };
 
+  const watchlistCoins = watchlist.map(symbol => allCoins.find(c => c.symbol === symbol)).filter((c): c is CoinData => c !== undefined);
+
+  // Portfolio Calculations
+  const currentPricesMap = new Map<string, number>();
+  allCoins.forEach(c => currentPricesMap.set(c.symbol, c.lastPrice));
+
+  const totalBalance = portfolio.reduce((sum, item) => {
+    const currentPrice = currentPricesMap.get(item.symbol) || 0;
+    return sum + (item.quantity * currentPrice);
+  }, 0);
+
+  const totalInvested = portfolio.reduce((sum, item) => sum + (item.quantity * item.averagePrice), 0);
+  const totalProfit = totalBalance - totalInvested;
+  const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
+
   if (isLoading) {
     return (
       <div className={styles.container}>
@@ -124,6 +146,133 @@ export const MarketDashboard: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {/* Portfolio Section */}
+      {portfolio.length > 0 && (
+        <div className={styles.section} style={{ background: 'linear-gradient(135deg, rgba(0,82,204,0.05) 0%, rgba(54,179,126,0.05) 100%)', borderColor: 'var(--primary-color)' }}>
+          <div className={styles.header}>
+            <h2 className={styles.sectionTitle}>
+              <PieChart size={18} color="var(--primary-color)" /> 내 포트폴리오
+            </h2>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--gray-500)', fontWeight: 600 }}>
+              총 자산 가치
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem' }}>
+            <div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--foreground)', lineHeight: 1.2 }}>
+                {formatKRW(totalBalance)}
+              </div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--gray-500)', marginTop: '4px' }}>
+                ≈ {formatPrice(totalBalance)}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div className={`${styles.changeTag} ${totalProfit >= 0 ? styles.positive : styles.negative}`} style={{ fontSize: '1rem', padding: '6px 12px' }}>
+                {totalProfit >= 0 ? '+' : ''}{totalProfitPercent.toFixed(2)}%
+              </div>
+              <div style={{ fontSize: '0.75rem', color: totalProfit >= 0 ? 'var(--success)' : 'var(--danger)', marginTop: '4px', fontWeight: 600 }}>
+                {totalProfit >= 0 ? '+' : ''}{formatKRW(totalProfit)}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.coinGrid}>
+            {portfolio.map((item) => {
+              const coin = allCoins.find(c => c.symbol === item.symbol);
+              if (!coin) return null;
+              const currentValue = item.quantity * coin.lastPrice;
+              const profit = currentValue - (item.quantity * item.averagePrice);
+              const profitPercent = (profit / (item.quantity * item.averagePrice)) * 100;
+
+              return (
+                <Link
+                  key={item.symbol}
+                  href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
+                  className={styles.coinCard}
+                  style={{ borderLeft: profit >= 0 ? '3px solid var(--success)' : '3px solid var(--danger)' }}
+                >
+                  <div className={styles.coinHeader}>
+                    <span className={styles.coinIconWrapper}>
+                      {!imageErrors.has(coin.symbol.toLowerCase()) ? (
+                        <Image
+                          src={`https://assets.coincap.io/assets/icons/${coin.symbol.toLowerCase()}@2x.png`}
+                          alt={coin.name}
+                          width={28}
+                          height={28}
+                          className={styles.coinIcon}
+                          onError={() => setImageErrors(prev => new Set(prev).add(coin.symbol.toLowerCase()))}
+                        />
+                      ) : (
+                        <span className={styles.coinIconFallback}>{coin.symbol.charAt(0)}</span>
+                      )}
+                    </span>
+                    <div>
+                      <span className={styles.coinName}>{coin.name}</span>
+                      <span className={styles.coinSymbol}>{item.quantity} {item.symbol}</span>
+                    </div>
+                  </div>
+                  <div className={styles.coinPrice}>
+                    <span className={styles.priceUsd}>{formatKRW(currentValue)}</span>
+                    <span className={`${styles.priceKrw} ${profit >= 0 ? styles.positive : styles.negative}`} style={{ color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                      {profit >= 0 ? '+' : ''}{profitPercent.toFixed(2)}%
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Watchlist Section */}
+      {watchlistCoins.length > 0 && (
+        <div className={styles.section}>
+          <div className={styles.header}>
+            <h2 className={styles.sectionTitle}>
+              <Heart size={18} fill="var(--danger)" color="var(--danger)" /> 관심 종목
+            </h2>
+          </div>
+          <div className={styles.coinGrid}>
+            {watchlistCoins.map((coin) => (
+              <Link
+                key={coin.symbol}
+                href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
+                className={styles.coinCard}
+              >
+                <div className={styles.coinHeader}>
+                  <span className={styles.coinIconWrapper}>
+                    {!imageErrors.has(coin.symbol.toLowerCase()) ? (
+                      <Image
+                        src={`https://assets.coincap.io/assets/icons/${coin.symbol.toLowerCase()}@2x.png`}
+                        alt={coin.name}
+                        width={28}
+                        height={28}
+                        className={styles.coinIcon}
+                        onError={() => setImageErrors(prev => new Set(prev).add(coin.symbol.toLowerCase()))}
+                      />
+                    ) : (
+                      <span className={styles.coinIconFallback}>{coin.symbol.charAt(0)}</span>
+                    )}
+                  </span>
+                  <div>
+                    <span className={styles.coinName}>{coin.name}</span>
+                    <span className={styles.coinSymbol}>{coin.symbol}</span>
+                  </div>
+                </div>
+                <div className={styles.coinPrice}>
+                  <span className={styles.priceUsd}>{formatPrice(coin.lastPrice)}</span>
+                  <span className={styles.priceKrw}>{formatKRW(coin.lastPrice)}</span>
+                </div>
+                <div className={`${styles.changeTag} ${coin.priceChangePercent >= 0 ? styles.positive : styles.negative}`}>
+                  {coin.priceChangePercent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  {coin.priceChangePercent >= 0 ? '+' : ''}{coin.priceChangePercent.toFixed(2)}%
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 거래대금 TOP 5 */}
       <div className={styles.section}>
         <div className={styles.header}>

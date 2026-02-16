@@ -56,9 +56,9 @@ const AICustomChart = ({
   easyMode,
 }: {
   symbol: string,
-  entryPrice: number,
-  targetPrice: number,
-  stopLoss: number,
+  entryPrice: number | undefined,
+  targetPrice: number | undefined,
+  stopLoss: number | undefined,
   isBullish: boolean,
   easyMode: boolean,
 }) => {
@@ -240,21 +240,27 @@ const AICustomChart = ({
         macdHistogramSeries.setData(histogramData as any);
 
         // Entry/Target/Stop Loss Lines
-        candlestickSeries.createPriceLine({
-          price: entryPrice, color: '#2962FF', lineWidth: 2,
-          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
-          title: easyMode ? '매수 예정가' : 'Entry (Limit)',
-        });
-        candlestickSeries.createPriceLine({
-          price: targetPrice, color: '#22c55e', lineWidth: 2,
-          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
-          title: easyMode ? '목표 수익가' : 'Target',
-        });
-        candlestickSeries.createPriceLine({
-          price: stopLoss, color: '#ef4444', lineWidth: 2,
-          lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
-          title: easyMode ? '손실 제한가' : 'Stop Loss',
-        });
+        if (typeof entryPrice === 'number') {
+          candlestickSeries.createPriceLine({
+            price: entryPrice, color: '#2962FF', lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
+            title: easyMode ? '매수 예정가' : 'Entry (Limit)',
+          });
+        }
+        if (typeof targetPrice === 'number') {
+          candlestickSeries.createPriceLine({
+            price: targetPrice, color: '#22c55e', lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
+            title: easyMode ? '목표 수익가' : 'Target',
+          });
+        }
+        if (typeof stopLoss === 'number') {
+          candlestickSeries.createPriceLine({
+            price: stopLoss, color: '#ef4444', lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true,
+            title: easyMode ? '손실 제한가' : 'Stop Loss',
+          });
+        }
 
         chart.timeScale().fitContent();
 
