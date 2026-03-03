@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { calculateRSI, calculateMACD, calculateEMA } from '@/lib/indicators';
+import { loadPrompt } from '@/lib/promptLoader';
 
 const BINANCE_BASE_URL = 'https://api.binance.us/api/v3';
 
@@ -69,37 +70,39 @@ export async function GET(request: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel(
-      { model: 'gemini-flash-latest' },
+      { 
+        model: 'gemini-flash-latest',
+        generationConfig: {
+          temperature: 0.2, // 분석의 일관성과 정밀도를 위해 낮게 설정
+          topP: 0.8,
+          topK: 40,
+        }
+      },
       { apiVersion: 'v1beta' }
     );
 
-    const smcPromptContent = `
-You are an **Elite Quant Trader with 15+ years of prop firm experience**, specializing in SMC (Smart Money Concepts) and ICT (Inner Circle Trader) strategies. 
-Your goal is to provide **institutional-grade trading signals** with maximum precision.
+    const smcPrompt = loadPrompt('SMC_prompt.md');
+    const traningPrompt = loadPrompt('traning_prompt.md');
 
-### CORE ANALYSIS FRAMEWORK:
-1. **Market Structure Analysis**: 
-   - Identify HTF (Daily) and LTF (4H) bias.
-   - Look for MSS/CHoCH (Change of Character) and BOS (Break of Structure).
-2. **SMC/ICT Identification**:
-   - Locate Order Blocks (OB) and Fair Value Gaps (FVG).
-   - Identify Liquidity Sweeps above/below key swing points.
-   - Observe Displacement in price movement.
-3. **Execution Rules**:
-   - Confluence Rule: Need at least 3 confluences (e.g., Sweep + MSS + FVG Retest).
-   - HTF Alignment: LTF entry must align with HTF bias.
-   - Killzone Check: Preferred entries during London/NY overlaps.
+    const combinedPrompt = `
+${traningPrompt}
 
-### INPUT DATA FOR ${symbol}:
-- **Current Price**: ${latestPrice}
-- **Daily Context**: RSI ${dailyRSI[dailyRSI.length - 1]?.toFixed(2)}, MACD ${dailyMACD.macdLine[dailyMACD.macdLine.length - 1]?.toFixed(4)}, EMA20 ${dailyEMA20[dailyEMA20.length - 1]?.toFixed(2)}
-- **4-Hour Context**: RSI ${fhRSI[fhRSI.length - 1]?.toFixed(2)}, MACD ${fhMACD.macdLine[fhMACD.macdLine.length - 1]?.toFixed(4)}, EMA20 ${fhEMA20[fhEMA20.length - 1]?.toFixed(2)}
+---
 
-### OUTPUT REQUIREMENTS:
-- Provide analysis in KOREAN (Insights section).
-- Use professional SMC/ICT terminology (FVG, OB, BOS, MSS, Liquidity Sweep 등).
-- Provide a clear recommendation and specific entry logic.
-- Target Price and Stop Loss must respect technical structure (e.g., SL below/above the candle that created FVG/OB).
+### ADDITIONAL STRICT SMC FILTERS (From SMC_prompt.md):
+${smcPrompt}
+
+---
+
+### CURRENT MARKET DATA INPUT FOR ${symbol}:
+- **Current Price**: ${latestPrice.toLocaleString()} USDT
+- **Daily Context (HTF)**: RSI ${dailyRSI[dailyRSI.length - 1]?.toFixed(2)}, MACD ${dailyMACD.macdLine[dailyMACD.macdLine.length - 1]?.toFixed(4)}, EMA20 ${dailyEMA20[dailyEMA20.length - 1]?.toFixed(2)}
+- **4-Hour Context (LTF)**: RSI ${fhRSI[fhRSI.length - 1]?.toFixed(2)}, MACD ${fhMACD.macdLine[fhMACD.macdLine.length - 1]?.toFixed(4)}, EMA20 ${fhEMA20[fhEMA20.length - 1]?.toFixed(2)}
+
+### OUTPUT REQUIREMENTS & JSON SCHEMA:
+Provide your final institutional-grade briefing in KOREAN.
+Use the JSON schema below for the final response. Ensure the 'insights' array strictly follows the structure: 
+[MARKET CONTEXT], [SETUP VALIDATION], [TRADE PLAN], [EXPERT WARNING] as defined in the master logic.
 
 Response MUST be in this JSON format:
 {
@@ -107,10 +110,10 @@ Response MUST be in this JSON format:
   "recommendation": "Strong Buy | Buy | Hold | Sell | Strong Sell | No Trade",
   "trend": "Bullish | Bearish | Neutral | Choppy",
   "insights": [
-    "SMC 기반 추세 및 구조 분석 결과...",
-    "주요 유동성(Liquidity) 및 공급/수요 존(OB/FVG) 위치...",
-    "매수/매도 진입의 핵심 컨플루언스 근거(선정된 진입가 이유 포함)...",
-    "주의해야 할 리스크 요소 및 세션 특징"
+    "[MARKET CONTEXT] HTF Bias 및 현재 Killzone 상태 분석...",
+    "[SETUP VALIDATION] 유동성 스윕, MSS, POI(OB/FVG/Unicorn) 확인 결과...",
+    "[TRADE PLAN] 구체적인 진입가 선정 이유 및 R:R 계산 근거...",
+    "[EXPERT WARNING] 리테일 함정(Inducement) 주의 및 주요 리스크 요소..."
   ],
   "entryPrice": number,
   "targetPrice": number,
@@ -119,7 +122,7 @@ Response MUST be in this JSON format:
 }
     `;
 
-    const result = await model.generateContent(smcPromptContent);
+    const result = await model.generateContent(combinedPrompt);
     const responseText = result.response.text();
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     const analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: 'Failed to parse AI response' };
