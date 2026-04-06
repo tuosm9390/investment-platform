@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"B=~/.claude/skills/gstack/browse/dist/browse\\n\\\"$B\\\" goto \\\"file:///tmp/gstack-sketch.html\\\" && \\\"$B\\\" screenshot /tmp/gstack-sketch.png && echo \\\"SCREENSHOT_OK\\\"\",\"description\":\"Render wi...",
+  "error": "Exit code 1\n[browse] Starting server...\nBlocked: scheme \"file:\" is not allowed. Only http: and https: URLs are permitted.",
+  "timestamp": "2026-03-29T16:21:32.806Z",
+  "retry_count": 1
+}

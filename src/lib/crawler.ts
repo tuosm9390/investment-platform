@@ -1,5 +1,5 @@
-import axios from 'axios';
 import * as cheerio from 'cheerio';
+import puppeteer from 'puppeteer';
 
 export interface NewsItem {
   id: string;
@@ -9,72 +9,110 @@ export interface NewsItem {
   summary: string;
   url: string;
   imageUrl?: string;
+  coinTags?: string[]; // Added for impact mapping
+}
+
+const COIN_KEYWORDS: Record<string, string[]> = {
+  'BTC': ['비트코인', 'bitcoin', 'btc'],
+  'ETH': ['이더리움', 'ethereum', 'eth'],
+  'SOL': ['솔라나', 'solana', 'sol'],
+  'XRP': ['리플', 'ripple', 'xrp'],
+  'DOGE': ['도지코인', 'dogecoin', 'doge'],
+  'ADA': ['에이다', 'cardano', 'ada'],
+  'AVAX': ['아발란체', 'avalanche', 'avax'],
+  'SHIB': ['시바이누', 'shiba', 'shib'],
+  'DOT': ['폴카닷', 'polkadot', 'dot'],
+  'TRX': ['트론', 'tron', 'trx']
+};
+
+function extractCoinTags(text: string): string[] {
+  const lowerText = text.toLowerCase();
+  const tags = new Set<string>();
+
+  for (const [symbol, keywords] of Object.entries(COIN_KEYWORDS)) {
+    if (keywords.some(kw => lowerText.includes(kw))) {
+      tags.add(symbol);
+    }
+  }
+
+  return Array.from(tags);
 }
 
 export async function crawlNews(topic: string): Promise<NewsItem[]> {
   const encodedTopic = encodeURIComponent(topic);
-  const url = `https://news.google.com/rss/search?q=${encodedTopic}&hl=ko&gl=KR&ceid=KR:ko`;
+  const url = `https://kr.investing.com/search/?q=${encodedTopic}`;
 
-  console.log(`Fetching Google News RSS for topic: ${topic}`);
+  console.log(`Fetching Investing.com News for topic: ${topic}`);
 
+  let browser;
   try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data, { xmlMode: true });
+    browser = await puppeteer.launch({ 
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const content = await page.content();
+    const $ = cheerio.load(content);
+    
+    if ($('title').text().includes('Cloudflare') || $('title').text().includes('Attention Required')) {
+        console.warn('Blocked by Cloudflare while crawling Investing.com');
+        return [];
+    }
+
     const newsItems: NewsItem[] = [];
 
-    $('item').each((index, element) => {
-      if (index >= 12) return false; // Limit items
+    $('.articleItem').each((index, element) => {
+      if (index >= 12) return false;
 
-      const titleFull = $(element).find('title').text();
-      const link = $(element).find('link').text();
-      const pubDate = $(element).find('pubDate').text();
-      const source = $(element).find('source').text();
-
-      // Title usually comes as "Title - Source", let's clean it if needed, or keep it.
-      // Google News titles are often "Headline - SourceName".
-      let title = titleFull;
-      if (title.includes(' - ')) {
-        title = title.split(' - ').slice(0, -1).join(' - ');
+      const title = $(element).find('.title').text().trim();
+      const relativeLink = $(element).find('.title').attr('href');
+      const link = relativeLink ? (relativeLink.startsWith('http') ? relativeLink : `https://kr.investing.com${relativeLink}`) : '';
+      
+      const summaryText = $(element).find('p').text().trim();
+      const summary = summaryText || title;
+      
+      let dateText = $(element).find('.date').text().trim();
+      if (!dateText) {
+        const details = $(element).find('.articleDetails').text().trim();
+        const dateMatch = details.match(/\d{4}년 \d{2}월 \d{2}일/);
+        dateText = dateMatch ? dateMatch[0] : new Date().toLocaleDateString('ko-KR');
       }
 
-      // Format date (pubDate is RFC822, e.g., "Mon, 09 Feb 2026 ...")
-      // Simple formatting to "YYYY-MM-DD" or similar
-      const dateObj = new Date(pubDate);
-      const date = dateObj.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
+      if (title && link) {
+        // Extract tags from title and summary
+        const coinTags = extractCoinTags(`${title} ${summary}`);
 
-      // Google RSS doesn't provide summary/description cleanly (it's often HTML).
-      // We can use the description as summary but strip HTML tags.
-      const descriptionHtml = $(element).find('description').text();
-      const summary = cheerio.load(descriptionHtml).text().trim() || title;
-
-      if (title) {
         newsItems.push({
-          id: `google-rss-${index}`,
+          id: `investing-${index}-${Date.now()}`,
           title,
-          source: source || 'Google News',
-          date: date,
-          summary: summary.length > 100 ? summary.substring(0, 100) + '...' : summary,
+          source: 'Investing.com',
+          date: dateText,
+          summary: summary.length > 150 ? summary.substring(0, 150) + '...' : summary,
           url: link,
-          // Google RSS doesn't provide images in a standard way easily compliant with simple parsing.
-          // We could try to extract from description HTML if present, but often it's just text links.
-          // For now, leave imageUrl undefined or use a placeholder in the UI component.
+          coinTags: coinTags.length > 0 ? coinTags : undefined
         });
       }
     });
 
-    console.log(`Crawled ${newsItems.length} items from Google News RSS`);
+    console.log(`Crawled ${newsItems.length} items from Investing.com with tags`);
     return newsItems;
 
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error('RSS Crawling failed:', error.message);
+      console.error('Investing.com Crawling failed:', error.message);
     } else {
-      console.error('RSS Crawling failed:', error);
+      console.error('Investing.com Crawling failed:', error);
     }
     return [];
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 }

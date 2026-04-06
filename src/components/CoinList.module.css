@@ -1,0 +1,134 @@
+.container {
+  background: var(--background);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: var(--spacing-xl);
+}
+
+.header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--gray-200);
+  background-color: var(--gray-50);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.icon {
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--gray-200);
+  background-color: var(--background);
+  user-select: none;
+}
+
+.sortable {
+  cursor: pointer;
+}
+
+.sortable:hover {
+  color: var(--primary-color);
+  background-color: var(--gray-50);
+}
+
+.table td {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 0.875rem;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover {
+  background-color: var(--gray-50);
+}
+
+.coinInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.coinInfo:hover .coinName {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.coinSymbol {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--foreground);
+}
+
+.coinName {
+  color: var(--gray-500);
+  font-size: 0.8125rem;
+}
+
+.newBadge {
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.priceCell {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.changeCell {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.positive {
+  color: var(--success);
+}
+
+.negative {
+  color: var(--danger);
+}
+
+.volumeCell {
+  font-family: var(--font-mono);
+  color: var(--gray-600);
+  text-align: right;
+}
+
+.table th:last-child,
+.table td:last-child {
+  text-align: right;
+}

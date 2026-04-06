@@ -1,0 +1,150 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-2xl) var(--spacing-md);
+}
+
+.header {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--foreground);
+  margin-bottom: var(--spacing-xs);
+}
+
+.subtitle {
+  color: var(--gray-500);
+  font-size: 1rem;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+}
+
+@media (min-width: 768px) {
+  .statsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.statCard {
+  background: var(--background);
+  border: 1px solid var(--gray-200);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--spacing-xs);
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+}
+
+.statSub {
+  font-size: 0.8125rem;
+  margin-top: 4px;
+  font-weight: 600;
+  color: var(--gray-500);
+}
+
+.section {
+  background: var(--background);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+}
+
+.sectionHeader {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--gray-200);
+  background-color: var(--gray-50);
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.table td {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--gray-100);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+.assetCell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.symbol {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.positive { color: var(--success); }
+.negative { color: var(--danger); }
+
+.deleteBtn {
+  color: var(--gray-400);
+  padding: 4px;
+}
+
+.deleteBtn:hover {
+  color: var(--danger);
+  background-color: var(--gray-100);
+}
+
+.emptyState {
+  padding: var(--spacing-2xl);
+  text-align: center;
+  color: var(--gray-500);
+}
+
+.emptyIcon {
+  margin-bottom: var(--spacing-md);
+  color: var(--gray-200);
+}
+
+.loading {
+  padding: var(--spacing-2xl);
+  text-align: center;
+  font-weight: 600;
+  color: var(--gray-400);
+}

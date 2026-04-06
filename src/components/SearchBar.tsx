@@ -75,7 +75,7 @@ export default function SearchBar() {
   const showRecent = !query.trim() && recentSearches.length > 0;
   const hasResults = filteredSuggestions.length > 0 || showRecent;
 
-  const handleSearch = useCallback((searchQuery: string, symbol?: string, type?: 'crypto' | 'stock') => {
+  const handleSearch = useCallback((searchQuery: string, symbol?: string) => {
     if (searchQuery.trim()) {
       saveRecentSearch(searchQuery.trim());
       setRecentSearches(getRecentSearches());
@@ -84,11 +84,9 @@ export default function SearchBar() {
 
       let url = `/search/${encodeURIComponent(searchQuery.trim())}`;
 
-      // 코인/주식 심볼이 특정된 경우 쿼리 파라미터로 전달 (뉴스 페이지로 이동)
+      // 코인 심볼이 특정된 경우 쿼리 파라미터로 전달 (뉴스 페이지로 이동)
       if (symbol) {
         url += `?coin=${symbol.toLowerCase()}`;
-      } else if (type === 'crypto' || type === 'stock') {
-        // 타입은 있지만 심볼이 없는 경우 처리 (현재 로직 유지)
       }
 
       router.push(url);
@@ -99,12 +97,12 @@ export default function SearchBar() {
     e.preventDefault();
     if (activeIndex >= 0 && filteredSuggestions[activeIndex]) {
       const item = filteredSuggestions[activeIndex];
-      handleSearch(item.name, item.symbol, item.type);
+      handleSearch(item.name, item.symbol);
     } else {
       // 입력된 검색어와 정확히 일치하는 제안이 있는지 확인
       const match = SUGGESTIONS.find(s => s.name.toLowerCase() === query.trim().toLowerCase() || s.symbol.toLowerCase() === query.trim().toLowerCase());
       if (match) {
-        handleSearch(match.name, match.symbol, match.type);
+        handleSearch(match.name, match.symbol);
       } else {
         handleSearch(query);
       }
@@ -187,7 +185,7 @@ export default function SearchBar() {
                   <span className={styles.suggestionName}>{item.name}</span>
                   <span className={styles.suggestionSymbol}>{item.symbol}</span>
                   <span className={styles.suggestionType}>
-                    {item.type === 'crypto' ? '암호화폐' : '주식'}
+                    암호화폐
                   </span>
                 </button>
               ))}

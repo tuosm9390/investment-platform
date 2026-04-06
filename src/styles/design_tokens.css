@@ -1,66 +1,71 @@
 :root {
-  /* Colors */
-  --primary-color: #0052cc;
-  --primary-hover: #0747a6;
-  --secondary-color: #ff5630;
+  /* Colors - High contrast, professional palette */
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary-color: #f97316;
 
   --background: #ffffff;
-  --foreground: #172b4d;
+  --foreground: #0f172a;
 
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
 
-  --success: #36b37e;
-  --warning: #ffab00;
-  --danger: #ff5630;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 
-  /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Typography - Clean sans-serif and robust monospace for data */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', monospace;
 
-  /* Spacing */
+  /* Spacing - Precise, dashboard-optimized */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1.25rem;
   --spacing-xl: 2rem;
-  --spacing-2xl: 3rem;
+  --spacing-2xl: 3.5rem;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* Shadows - Minimal, non-diffuse for a professional "blueprint" feel */
+  --shadow-sm: 1px 1px 0px rgba(0, 0, 0, 0.05);
+  --shadow-md: 2px 2px 0px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 4px 4px 0px rgba(0, 0, 0, 0.15);
 
-  /* Border Radius */
-  --radius-sm: 0.125rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
+  /* Border Radius - Sharp edges for a solid, reliable feel */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
   --radius-full: 9999px;
 }
 
 [data-theme='dark'] {
-  --background: #0d1117;
-  --foreground: #c9d1d9;
+  --background: #020617;
+  --foreground: #f1f5f9;
 
-  --gray-50: #161b22;
-  --gray-100: #21262d;
-  --gray-200: #30363d;
-  --gray-300: #484f58;
-  --gray-400: #6e7681;
-  --gray-500: #8b949e;
-  --gray-600: #b1bac4;
-  --gray-700: #c9d1d9;
-  --gray-800: #f0f6fc;
+  --gray-50: #0f172a;
+  --gray-100: #1e293b;
+  --gray-200: #334155;
+  --gray-300: #475569;
+  --gray-400: #64748b;
+  --gray-500: #94a3b8;
+  --gray-600: #cbd5e1;
+  --gray-700: #e2e8f0;
+  --gray-800: #f1f5f9;
   --gray-900: #ffffff;
 
-  --primary-color: #58a6ff;
-  --primary-hover: #79c0ff;
+  --primary-color: #3b82f6;
+  --primary-hover: #60a5fa;
+
+  --shadow-sm: 1px 1px 0px rgba(255, 255, 255, 0.05);
+  --shadow-md: 2px 2px 0px rgba(255, 255, 255, 0.1);
+  --shadow-lg: 4px 4px 0px rgba(255, 255, 255, 0.15);
 }

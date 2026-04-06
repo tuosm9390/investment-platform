@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { ArrowUp, ArrowDown, RefreshCw, AlertCircle, TrendingUp, Bitcoin, Activity, DollarSign, Wallet, Heart, Bell } from 'lucide-react';
 import { useSearchParams, useParams } from 'next/navigation';
 import Image from 'next/image';
-import { PriceData, StockPriceData, BINANCE_WS_URL, KRW_RATE, FilterType, filterCryptoData } from '@/lib/prices';
+import { PriceData, BINANCE_WS_URL, KRW_RATE, FilterType, filterCryptoData } from '@/lib/prices';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { usePriceAlerts } from '@/hooks/usePriceAlerts';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -37,7 +37,6 @@ interface BinanceTickerStream {
 
 export default function PricesPage() {
   const [allCryptoPrices, setAllCryptoPrices] = useState<PriceData[]>([]);
-  const [stockPrices, setStockPrices] = useState<StockPriceData[]>([]);
   const searchParams = useSearchParams();
   const params = useParams();
   const coinParam = searchParams.get('coin');
@@ -153,16 +152,13 @@ export default function PricesPage() {
         if (data.crypto && data.crypto.length > 0) {
           setAllCryptoPrices(data.crypto);
         }
-        if (data.stocks && data.stocks.length > 0) {
-          setStockPrices(data.stocks);
-        }
         setLastUpdate(new Date());
         setError(null);
         setIsLoading(false);
       }
     } catch (err: unknown) {
       if (isMounted.current) {
-        console.error('Initial data fetch error:', err); // Explicitly use err
+        console.error('Initial data fetch error:', err);
         setError('초기 데이터 로딩 실패');
         setIsLoading(false);
       }
@@ -546,18 +542,6 @@ export default function PricesPage() {
         symbol={activeSymbol}
         currentPrice={activePrice}
       />
-
-      {/* Stock Section — Coming Soon */}
-      <section className={styles.section}>
-        <div className={styles.comingSoonCard}>
-          <span className={styles.comingSoonIcon}>📈</span>
-          <h3 className={styles.comingSoonTitle}>주식 시세 서비스</h3>
-          <p className={styles.comingSoonText}>
-            한국 및 해외 주식 실시간 시세 서비스가 곧 추가될 예정입니다.
-          </p>
-          <span className={styles.comingSoonBadge}>Coming Soon</span>
-        </div>
-      </section>
 
       <p className={styles.disclaimer}>
         * 암호화폐 시세는 Binance WebSocket API를 통해 실시간 제공됩니다.

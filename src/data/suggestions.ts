@@ -14,13 +14,4 @@ export const SUGGESTIONS = [
   { name: '수이', symbol: 'SUI', type: 'crypto' as const },
   { name: '시바이누', symbol: 'SHIB', type: 'crypto' as const },
   { name: '페페', symbol: 'PEPE', type: 'crypto' as const },
-  { name: '삼성전자', symbol: '005930', type: 'stock' as const },
-  { name: 'SK하이닉스', symbol: '000660', type: 'stock' as const },
-  { name: 'LG에너지솔루션', symbol: '373220', type: 'stock' as const },
-  { name: '현대자동차', symbol: '005380', type: 'stock' as const },
-  { name: 'NAVER', symbol: '035420', type: 'stock' as const },
-  { name: '카카오', symbol: '035720', type: 'stock' as const },
-  { name: '테슬라', symbol: 'TSLA', type: 'stock' as const },
-  { name: '애플', symbol: 'AAPL', type: 'stock' as const },
-  { name: '엔비디아', symbol: 'NVDA', type: 'stock' as const },
 ];

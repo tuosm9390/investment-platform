@@ -1,21 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { TrendingUp, TrendingDown, ArrowRight, Zap, Activity, Heart, Wallet, PieChart } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, Clock, PieChart, Heart, Zap } from 'lucide-react';
 import styles from './MarketDashboard.module.css';
+import { CoinList, CoinData } from './CoinList';
 import { getExchangeRate } from '@/lib/prices';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { usePortfolio } from '@/hooks/usePortfolio';
-
-interface CoinData {
-  symbol: string;
-  name: string;
-  lastPrice: number;
-  priceChangePercent: number;
-  quoteVolume: number;
-}
 
 // 주요 코인 이름 매핑
 const COIN_NAMES: Record<string, string> = {
@@ -26,30 +17,30 @@ const COIN_NAMES: Record<string, string> = {
   PEPE: '페페', SUI: '수이', ARB: '아비트럼', OP: '옵티미즘',
 };
 
-export const MarketDashboard: React.FC = () => {
-  const [topCoins, setTopCoins] = useState<CoinData[]>([]);
-  const [gainers, setGainers] = useState<CoinData[]>([]);
-  const [losers, setLosers] = useState<CoinData[]>([]);
-  const { watchlist } = useWatchlist();
-  const { portfolio, getTotalValue } = usePortfolio();
-  const [allCoins, setAllCoins] = useState<CoinData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  const [krwRate, setKrwRate] = useState(1400); // Default fallback
-  const isMounted = useRef(true);
+// Newly listed coins (Mock for now)
+const NEWLY_LISTED_SYMBOLS = ['SUI', 'APT', 'ARB', 'OP', 'PEPE'];
 
-  // 환율 조회
-  useEffect(() => {
-    getExchangeRate().then(rate => {
-      if (isMounted.current) setKrwRate(rate);
-    });
-  }, []);
+export const MarketDashboard: React.FC = () => {
+  const [marketSectors, setMarketSectors] = useState<{
+    topVolume: CoinData[];
+    topGainers: CoinData[];
+    topLosers: CoinData[];
+    newlyListed: CoinData[];
+    trending: CoinData[];
+  }>({
+    topVolume: [],
+    topGainers: [],
+    topLosers: [],
+    newlyListed: [],
+    trending: []
+  });
+
+  const [isLoading, setIsLoading] = useState(true);
+  const isMounted = useRef(true);
 
   const fetchMarketData = useCallback(async () => {
     try {
-      const response = await fetch('https://api.binance.com/api/v3/ticker/24hr', {
-        next: { revalidate: 30 }
-      } as RequestInit);
+      const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
       const data = await response.json();
 
       if (!isMounted.current) return;
@@ -66,21 +57,46 @@ export const MarketDashboard: React.FC = () => {
         .map((t: any) => ({
           symbol: t.symbol.replace('USDT', ''),
           name: COIN_NAMES[t.symbol.replace('USDT', '')] || t.symbol.replace('USDT', ''),
-          lastPrice: parseFloat(t.lastPrice),
-          priceChangePercent: parseFloat(t.priceChangePercent),
-          quoteVolume: parseFloat(t.quoteVolume),
+          price: parseFloat(t.lastPrice),
+          change24h: parseFloat(t.priceChangePercent),
+          volume24h: parseFloat(t.quoteVolume),
+          isNew: false
         }));
 
-      setAllCoins(usdtPairs);
+      // 1. Top Volume
+      const topVolume = [...usdtPairs].sort((a, b) => b.volume24h - a.volume24h).slice(0, 10);
 
-      // TOP 5 by volume
-      const sorted = [...usdtPairs].sort((a: CoinData, b: CoinData) => b.quoteVolume - a.quoteVolume);
-      setTopCoins(sorted.slice(0, 5));
+      // 2. Top Gainers
+      const topGainers = [...usdtPairs].sort((a, b) => b.change24h - a.change24h).slice(0, 10);
 
-      // Top gainers/losers
-      const byChange = [...usdtPairs].sort((a: CoinData, b: CoinData) => b.priceChangePercent - a.priceChangePercent);
-      setGainers(byChange.slice(0, 3));
-      setLosers(byChange.slice(-3).reverse());
+      // 3. Top Losers (Sort by largest drop first)
+      const topLosers = [...usdtPairs]
+        .filter(c => c.change24h < 0)
+        .sort((a, b) => a.change24h - b.change24h) // Most negative first
+        .slice(0, 10);
+
+      // 4. Newly Listed (30 days criteria)
+      const RECENT_30D_LISTINGS = ['WIF', 'METIS', 'AEVO', 'BOME', 'ETHFI', 'ENA', 'W', 'TNSR', 'SAGA'];
+      const newlyListed = usdtPairs
+        .filter(c => RECENT_30D_LISTINGS.includes(c.symbol.toUpperCase()))
+        .map(c => ({ ...c, isNew: true }))
+        .slice(0, 10);
+
+      // 5. Trending Activity (High volume + high volatility / "Hot" right now)
+      // Heuristic: Top volume but excluding the absolute top 2 (BTC, ETH) to show surging alts, 
+      // or simply products with highest combined (vol + abs_change)
+      const trending = [...usdtPairs]
+        .filter(c => !['BTC', 'ETH'].includes(c.symbol.toUpperCase()))
+        .sort((a, b) => (b.volume24h * Math.abs(b.change24h)) - (a.volume24h * Math.abs(a.change24h)))
+        .slice(0, 10);
+
+      setMarketSectors({
+        topVolume,
+        topGainers,
+        topLosers,
+        newlyListed,
+        trending
+      });
 
       setIsLoading(false);
     } catch (err) {
@@ -92,284 +108,53 @@ export const MarketDashboard: React.FC = () => {
   useEffect(() => {
     isMounted.current = true;
     fetchMarketData();
-    const interval = setInterval(fetchMarketData, 30000); // 30초마다 갱신
+    const interval = setInterval(fetchMarketData, 30000);
     return () => {
       isMounted.current = false;
       clearInterval(interval);
     };
   }, [fetchMarketData]);
 
-  const formatPrice = (price: number) => {
-    if (price >= 1) return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}`;
-  };
-
-  const formatKRW = (price: number) => {
-    return `₩${Math.round(price * krwRate).toLocaleString('ko-KR')}`;
-  };
-
-  const watchlistCoins = watchlist.map(symbol => allCoins.find(c => c.symbol === symbol)).filter((c): c is CoinData => c !== undefined);
-
-  // Portfolio Calculations
-  const currentPricesMap = new Map<string, number>();
-  allCoins.forEach(c => currentPricesMap.set(c.symbol, c.lastPrice));
-
-  const totalBalance = portfolio.reduce((sum, item) => {
-    const currentPrice = currentPricesMap.get(item.symbol) || 0;
-    return sum + (item.quantity * currentPrice);
-  }, 0);
-
-  const totalInvested = portfolio.reduce((sum, item) => sum + (item.quantity * item.averagePrice), 0);
-  const totalProfit = totalBalance - totalInvested;
-  const totalProfitPercent = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
-
   if (isLoading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h2 className={styles.sectionTitle}>
-            <Activity size={20} /> 실시간 시장 현황
-          </h2>
-        </div>
-        <div className={styles.skeletonGrid}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className={styles.skeletonCard}>
-              <div className={styles.skeletonCircle} />
-              <div className={styles.skeletonLine} />
-              <div className={styles.skeletonLineShort} />
-            </div>
-          ))}
-        </div>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner} />
+        <p>시장 데이터를 불러오는 중...</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      {/* Portfolio Section */}
-      {portfolio.length > 0 && (
-        <div className={styles.section} style={{ background: 'linear-gradient(135deg, rgba(0,82,204,0.05) 0%, rgba(54,179,126,0.05) 100%)', borderColor: 'var(--primary-color)' }}>
-          <div className={styles.header}>
-            <h2 className={styles.sectionTitle}>
-              <PieChart size={18} color="var(--primary-color)" /> 내 포트폴리오
-            </h2>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--gray-500)', fontWeight: 600 }}>
-              총 자산 가치
-            </span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem' }}>
-            <div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--foreground)', lineHeight: 1.2 }}>
-                {formatKRW(totalBalance)}
-              </div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--gray-500)', marginTop: '4px' }}>
-                ≈ {formatPrice(totalBalance)}
-              </div>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div className={`${styles.changeTag} ${totalProfit >= 0 ? styles.positive : styles.negative}`} style={{ fontSize: '1rem', padding: '6px 12px' }}>
-                {totalProfit >= 0 ? '+' : ''}{totalProfitPercent.toFixed(2)}%
-              </div>
-              <div style={{ fontSize: '0.75rem', color: totalProfit >= 0 ? 'var(--success)' : 'var(--danger)', marginTop: '4px', fontWeight: 600 }}>
-                {totalProfit >= 0 ? '+' : ''}{formatKRW(totalProfit)}
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.coinGrid}>
-            {portfolio.map((item) => {
-              const coin = allCoins.find(c => c.symbol === item.symbol);
-              if (!coin) return null;
-              const currentValue = item.quantity * coin.lastPrice;
-              const profit = currentValue - (item.quantity * item.averagePrice);
-              const profitPercent = (profit / (item.quantity * item.averagePrice)) * 100;
-
-              return (
-                <Link
-                  key={item.symbol}
-                  href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
-                  className={styles.coinCard}
-                  style={{ borderLeft: profit >= 0 ? '3px solid var(--success)' : '3px solid var(--danger)' }}
-                >
-                  <div className={styles.coinHeader}>
-                    <span className={styles.coinIconWrapper}>
-                      {!imageErrors.has(coin.symbol.toLowerCase()) ? (
-                        <Image
-                          src={`https://assets.coincap.io/assets/icons/${coin.symbol.toLowerCase()}@2x.png`}
-                          alt={coin.name}
-                          width={28}
-                          height={28}
-                          className={styles.coinIcon}
-                          onError={() => setImageErrors(prev => new Set(prev).add(coin.symbol.toLowerCase()))}
-                        />
-                      ) : (
-                        <span className={styles.coinIconFallback}>{coin.symbol.charAt(0)}</span>
-                      )}
-                    </span>
-                    <div>
-                      <span className={styles.coinName}>{coin.name}</span>
-                      <span className={styles.coinSymbol}>{item.quantity} {item.symbol}</span>
-                    </div>
-                  </div>
-                  <div className={styles.coinPrice}>
-                    <span className={styles.priceUsd}>{formatKRW(currentValue)}</span>
-                    <span className={`${styles.priceKrw} ${profit >= 0 ? styles.positive : styles.negative}`} style={{ color: profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                      {profit >= 0 ? '+' : ''}{profitPercent.toFixed(2)}%
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Watchlist Section */}
-      {watchlistCoins.length > 0 && (
-        <div className={styles.section}>
-          <div className={styles.header}>
-            <h2 className={styles.sectionTitle}>
-              <Heart size={18} fill="var(--danger)" color="var(--danger)" /> 관심 종목
-            </h2>
-          </div>
-          <div className={styles.coinGrid}>
-            {watchlistCoins.map((coin) => (
-              <Link
-                key={coin.symbol}
-                href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
-                className={styles.coinCard}
-              >
-                <div className={styles.coinHeader}>
-                  <span className={styles.coinIconWrapper}>
-                    {!imageErrors.has(coin.symbol.toLowerCase()) ? (
-                      <Image
-                        src={`https://assets.coincap.io/assets/icons/${coin.symbol.toLowerCase()}@2x.png`}
-                        alt={coin.name}
-                        width={28}
-                        height={28}
-                        className={styles.coinIcon}
-                        onError={() => setImageErrors(prev => new Set(prev).add(coin.symbol.toLowerCase()))}
-                      />
-                    ) : (
-                      <span className={styles.coinIconFallback}>{coin.symbol.charAt(0)}</span>
-                    )}
-                  </span>
-                  <div>
-                    <span className={styles.coinName}>{coin.name}</span>
-                    <span className={styles.coinSymbol}>{coin.symbol}</span>
-                  </div>
-                </div>
-                <div className={styles.coinPrice}>
-                  <span className={styles.priceUsd}>{formatPrice(coin.lastPrice)}</span>
-                  <span className={styles.priceKrw}>{formatKRW(coin.lastPrice)}</span>
-                </div>
-                <div className={`${styles.changeTag} ${coin.priceChangePercent >= 0 ? styles.positive : styles.negative}`}>
-                  {coin.priceChangePercent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                  {coin.priceChangePercent >= 0 ? '+' : ''}{coin.priceChangePercent.toFixed(2)}%
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 거래대금 TOP 5 */}
-      <div className={styles.section}>
-        <div className={styles.header}>
-          <h2 className={styles.sectionTitle}>
-            <Activity size={18} /> 거래량 TOP 5
-          </h2>
-          <Link href="/search/비트코인?coin=btc" className={styles.moreLink}>
-            전체 시세 보기 <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className={styles.coinGrid}>
-          {topCoins.map((coin) => (
-            <Link
-              key={coin.symbol}
-              href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
-              className={styles.coinCard}
-            >
-              <div className={styles.coinHeader}>
-                <span className={styles.coinIconWrapper}>
-                  {!imageErrors.has(coin.symbol.toLowerCase()) ? (
-                    <Image
-                      src={`https://assets.coincap.io/assets/icons/${coin.symbol.toLowerCase()}@2x.png`}
-                      alt={coin.name}
-                      width={28}
-                      height={28}
-                      className={styles.coinIcon}
-                      onError={() => setImageErrors(prev => new Set(prev).add(coin.symbol.toLowerCase()))}
-                    />
-                  ) : (
-                    <span className={styles.coinIconFallback}>{coin.symbol.charAt(0)}</span>
-                  )}
-                </span>
-                <div>
-                  <span className={styles.coinName}>{coin.name}</span>
-                  <span className={styles.coinSymbol}>{coin.symbol}</span>
-                </div>
-              </div>
-              <div className={styles.coinPrice}>
-                <span className={styles.priceUsd}>{formatPrice(coin.lastPrice)}</span>
-                <span className={styles.priceKrw}>{formatKRW(coin.lastPrice)}</span>
-              </div>
-              <div className={`${styles.changeTag} ${coin.priceChangePercent >= 0 ? styles.positive : styles.negative}`}>
-                {coin.priceChangePercent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {coin.priceChangePercent >= 0 ? '+' : ''}{coin.priceChangePercent.toFixed(2)}%
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* 급등 / 급락 */}
-      <div className={styles.trendGrid}>
-        <div className={styles.trendSection}>
-          <h3 className={styles.trendTitle}>
-            <Zap size={16} className={styles.gainIcon} /> 24시간 급등
-          </h3>
-          <div className={styles.trendList}>
-            {gainers.map((coin) => (
-              <Link
-                key={coin.symbol}
-                href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
-                className={styles.trendItem}
-              >
-                <span className={styles.trendName}>
-                  <span className={styles.trendSymbol}>{coin.symbol}</span>
-                  {coin.name}
-                </span>
-                <span className={`${styles.trendChange} ${styles.positive}`}>
-                  +{coin.priceChangePercent.toFixed(2)}%
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className={styles.trendSection}>
-          <h3 className={styles.trendTitle}>
-            <TrendingDown size={16} className={styles.lossIcon} /> 24시간 급락
-          </h3>
-          <div className={styles.trendList}>
-            {losers.map((coin) => (
-              <Link
-                key={coin.symbol}
-                href={`/search/${encodeURIComponent(coin.name)}?coin=${coin.symbol.toLowerCase()}`}
-                className={styles.trendItem}
-              >
-                <span className={styles.trendName}>
-                  <span className={styles.trendSymbol}>{coin.symbol}</span>
-                  {coin.name}
-                </span>
-                <span className={`${styles.trendChange} ${styles.negative}`}>
-                  {coin.priceChangePercent.toFixed(2)}%
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
+    <div className={styles.dashboardGrid}>
+      <CoinList 
+        title="24h 최고 거래량" 
+        icon={<Activity size={18} />} 
+        data={marketSectors.topVolume} 
+      />
+      <CoinList 
+        title="거래량 급증 및 활성" 
+        icon={<Zap size={18} />} 
+        data={marketSectors.trending} 
+        defaultSortKey="volume24h"
+      />
+      <CoinList 
+        title="24h 최고 상승" 
+        icon={<TrendingUp size={18} />} 
+        data={marketSectors.topGainers} 
+        defaultSortKey="change24h"
+      />
+      <CoinList 
+        title="24h 최고 하락" 
+        icon={<TrendingDown size={18} />} 
+        data={marketSectors.topLosers} 
+        defaultSortKey="change24h"
+        defaultSortOrder="desc"
+      />
+      <CoinList 
+        title="새롭게 출시된 코인" 
+        icon={<Clock size={18} />} 
+        data={marketSectors.newlyListed} 
+      />
     </div>
   );
 };

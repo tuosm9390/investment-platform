@@ -15,11 +15,18 @@ body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
 }
 
 a {
-  color: inherit;
+  color: var(--primary-color);
   text-decoration: none;
+  transition: color 0.1s ease;
+}
+
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
 }
 
 button {
@@ -27,22 +34,77 @@ button {
   border: none;
   background: none;
   font-family: inherit;
+  transition: all 0.1s ease;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling - Industrial, precise */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--gray-100);
+  background: var(--gray-50);
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--gray-300);
-  border-radius: var(--radius-full);
+  border: 2px solid var(--gray-50);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gray-400);
 }
+
+/* Common Layout Utilities */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+/* Typography Helpers */
+.text-mono { font-family: var(--font-mono); }
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+
+/* Dashboard Card Pattern */
+.card {
+  background: var(--background);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-md);
+}
+
+/* Data Table Pattern */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 2px solid var(--gray-200);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  font-weight: 600;
+}
+
+.data-table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--gray-100);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+.data-table tr:hover {
+  background-color: var(--gray-50);
+}
+
+/* Functional Colors */
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }

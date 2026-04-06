@@ -2,15 +2,20 @@ import Link from 'next/link';
 import SearchBar from '@/components/SearchBar';
 import { SUGGESTIONS } from '@/data/suggestions';
 import { MarketDashboard } from '@/components/MarketDashboard';
+import { TrendingNews } from '@/components/TrendingNews';
+import { crawlNews } from '@/lib/crawler';
 import styles from './page.module.css';
 
-export default function Home() {
+export default async function Home() {
+  // Fetch trending news for the main page
+  const news = await crawlNews('crypto');
+
   return (
     <div className={styles.container}>
       <div className={styles.heroSection}>
         <h1 className={styles.title}>Invesight</h1>
         <p className={styles.subtitle}>
-          AI 기반 투자 분석 플랫폼 — 실시간 시세, 뉴스, AI 예측을 한 곳에서
+          전문 투자자를 위한 AI 기반 분석 플랫폼 — 실시간 시세, 트렌딩 뉴스, 포트폴리오 관리
         </p>
         <div className={styles.searchWrapper}>
           <SearchBar />
@@ -35,6 +40,11 @@ export default function Home() {
       {/* 시장 대시보드 */}
       <section className={styles.dashboardSection}>
         <MarketDashboard />
+      </section>
+
+      {/* 트렌딩 뉴스 */}
+      <section className={styles.newsSection}>
+        <TrendingNews news={news} />
       </section>
     </div>
   );
