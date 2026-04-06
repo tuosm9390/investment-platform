@@ -1,8 +1,121 @@
+.dashboardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.titleGroup h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.proToggle {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--gray-700, #444);
+  background: var(--gray-800, #262626);
+  color: var(--gray-400, #888);
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 600;
+}
+
+.proToggle.active {
+  background: var(--primary-color, #3b82f6);
+  color: white;
+  border-color: var(--primary-color, #3b82f6);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.proSection {
+  margin-bottom: 30px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .dashboardGrid {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   gap: var(--spacing-lg);
   margin-top: var(--spacing-xl);
+}
+
+.titleWithTooltip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.infoIcon {
+  color: var(--gray-400);
+  cursor: help;
+  display: flex;
+  align-items: center;
+}
+
+.tooltipText {
+  visibility: hidden;
+  width: 280px;
+  background-color: #262626;
+  color: #fff;
+  text-align: left;
+  border-radius: 8px;
+  padding: 12px;
+  position: absolute;
+  z-index: 100;
+  bottom: 125%;
+  left: 0;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  border: 1px solid #444;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.infoIcon:hover .tooltipText {
+  visibility: visible;
+  opacity: 1;
+}
+
+.clickable {
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.clickable:hover {
+  background-color: var(--gray-700);
+  transform: translateX(4px);
+}
+
+.clickGuide {
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.analysisSection {
+  margin-top: 30px;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (min-width: 1024px) {

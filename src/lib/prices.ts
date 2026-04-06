@@ -34,13 +34,19 @@ export async function getExchangeRate(): Promise<number> {
     return cachedRate;
   }
   try {
-    const response = await axios.get('https://api.frankfurter.app/latest?from=USD&to=KRW');
-    cachedRate = response.data.rates.KRW;
-    lastFetchTime = now;
-    return cachedRate!;
+    // Call our own internal API route to bypass CORS
+    const response = await axios.get('/api/exchange-rate', {
+      timeout: 5000
+    });
+    if (response.data && response.data.rate) {
+      cachedRate = response.data.rate;
+      lastFetchTime = now;
+      return cachedRate!;
+    }
+    throw new Error('Invalid internal API response');
   } catch (error) {
-    console.error('Failed to fetch exchange rate:', error);
-    return 1400; // Fallback
+    console.warn('Failed to fetch exchange rate via internal API, using fallback:', error instanceof Error ? error.message : 'Unknown error');
+    return cachedRate || 1430;
   }
 }
 
@@ -182,3 +188,52 @@ export function getTradingViewSymbol(cryptoId: string): string {
 
 // Binance WebSocket stream URL for real-time prices (using 24hr ticker for percentage change)
 export const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws/!ticker@arr';
+
+// Memory cache for Klines to avoid redundant API calls
+const klinesCache: Record<string, { data: any[]; timestamp: number }> = {};
+const KLINES_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Fetch historical candle data (Klines) from Binance
+ * @param symbol Trading pair (e.g., BTCUSDT)
+ * @param interval Timeframe (e.g., 1h, 4h, 1d)
+ * @param limit Number of candles (default 500)
+ */
+export async function getHistoricalKlines(
+  symbol: string,
+  interval: string = '1h',
+  limit: number = 500
+): Promise<any[]> {
+  const formattedSymbol = symbol.toUpperCase().endsWith('USDT') ? symbol.toUpperCase() : `${symbol.toUpperCase()}USDT`;
+  const cacheKey = `${formattedSymbol}_${interval}_${limit}`;
+  
+  const now = Date.now();
+  if (klinesCache[cacheKey] && (now - klinesCache[cacheKey].timestamp < KLINES_CACHE_DURATION)) {
+    return klinesCache[cacheKey].data;
+  }
+
+  try {
+    const response = await axios.get(`https://api.binance.com/api/v3/klines`, {
+      params: {
+        symbol: formattedSymbol,
+        interval,
+        limit
+      }
+    });
+
+    const data = response.data.map((k: any) => ({
+      time: k[0] / 1000, // Convert to seconds
+      open: parseFloat(k[1]),
+      high: parseFloat(k[2]),
+      low: parseFloat(k[3]),
+      close: parseFloat(k[4]),
+      volume: parseFloat(k[5])
+    }));
+
+    klinesCache[cacheKey] = { data, timestamp: now };
+    return data;
+  } catch (error) {
+    console.error(`Failed to fetch Klines for ${formattedSymbol}:`, error);
+    return [];
+  }
+}

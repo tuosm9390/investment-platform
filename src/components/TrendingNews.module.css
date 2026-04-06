@@ -119,3 +119,40 @@
   border: 1px solid var(--gray-200);
   font-family: var(--font-mono);
 }
+
+/* Loading States */
+.loadingContainer {
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeletonText {
+  height: 1rem;
+  width: 100%;
+}
+
+.skeletonTitle {
+  height: 1.25rem;
+  width: 80%;
+  margin-bottom: var(--spacing-sm);
+}
+
+.skeletonMeta {
+  height: 0.75rem;
+  width: 40%;
+  margin-bottom: var(--spacing-xs);
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

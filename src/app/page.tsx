@@ -3,13 +3,9 @@ import SearchBar from '@/components/SearchBar';
 import { SUGGESTIONS } from '@/data/suggestions';
 import { MarketDashboard } from '@/components/MarketDashboard';
 import { TrendingNews } from '@/components/TrendingNews';
-import { crawlNews } from '@/lib/crawler';
 import styles from './page.module.css';
 
 export default async function Home() {
-  // Fetch trending news for the main page
-  const news = await crawlNews('crypto');
-
   return (
     <div className={styles.container}>
       <div className={styles.heroSection}>
@@ -44,7 +40,7 @@ export default async function Home() {
 
       {/* 트렌딩 뉴스 */}
       <section className={styles.newsSection}>
-        <TrendingNews news={news} />
+        <TrendingNews />
       </section>
     </div>
   );

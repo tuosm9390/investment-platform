@@ -21,9 +21,18 @@ const COIN_KEYWORDS: Record<string, string[]> = {
   'ADA': ['에이다', 'cardano', 'ada'],
   'AVAX': ['아발란체', 'avalanche', 'avax'],
   'SHIB': ['시바이누', 'shiba', 'shib'],
-  'DOT': ['폴카닷', 'polkadot', 'dot'],
+  'DOT': ['폴카닷', 'dot'],
   'TRX': ['트론', 'tron', 'trx']
 };
+
+// In-memory cache for news
+interface CacheEntry {
+  data: NewsItem[];
+  timestamp: number;
+}
+
+const newsCache: Record<string, CacheEntry> = {};
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 function extractCoinTags(text: string): string[] {
   const lowerText = text.toLowerCase();
@@ -39,6 +48,15 @@ function extractCoinTags(text: string): string[] {
 }
 
 export async function crawlNews(topic: string): Promise<NewsItem[]> {
+  const now = Date.now();
+  const cacheKey = topic.toLowerCase();
+
+  // Check cache
+  if (newsCache[cacheKey] && (now - newsCache[cacheKey].timestamp < CACHE_TTL)) {
+    console.log(`Returning cached news for topic: ${topic}`);
+    return newsCache[cacheKey].data;
+  }
+
   const encodedTopic = encodeURIComponent(topic);
   const url = `https://kr.investing.com/search/?q=${encodedTopic}`;
 
@@ -101,6 +119,13 @@ export async function crawlNews(topic: string): Promise<NewsItem[]> {
     });
 
     console.log(`Crawled ${newsItems.length} items from Investing.com with tags`);
+    
+    // Store in cache
+    newsCache[cacheKey] = {
+      data: newsItems,
+      timestamp: now
+    };
+
     return newsItems;
 
   } catch (error: unknown) {
