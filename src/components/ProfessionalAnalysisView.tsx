@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { createChart, IChartApi, ISeriesApi, UTCTimestamp, CandlestickSeries } from 'lightweight-charts';
+import { createChart, IChartApi, ISeriesApi, UTCTimestamp, CandlestickSeries, createSeriesMarkers } from 'lightweight-charts';
 import { 
   getHistoricalKlines 
 } from '@/lib/prices';
@@ -82,8 +82,8 @@ export const ProfessionalAnalysisView: React.FC<Props> = ({ symbol }) => {
       close: d.close,
     })));
 
-    // Visualize SMC Structure with safety check for setMarkers
-    if (analysis && typeof candlestickSeries.setMarkers === 'function') {
+    // Visualize SMC Structure using the v5 createSeriesMarkers utility
+    if (analysis) {
       const markers = analysis.structure.map(s => ({
         time: s.time as UTCTimestamp,
         position: s.direction === 'bullish' ? 'aboveBar' : 'belowBar',
@@ -91,9 +91,7 @@ export const ProfessionalAnalysisView: React.FC<Props> = ({ symbol }) => {
         shape: 'arrowDown' as const,
         text: s.type,
       }));
-      candlestickSeries.setMarkers(markers as any);
-    } else if (analysis) {
-      console.warn('setMarkers method not found on candlestickSeries object');
+      createSeriesMarkers(candlestickSeries, markers as any);
     }
 
     chartRef.current = chart;
@@ -194,7 +192,7 @@ export const ProfessionalAnalysisView: React.FC<Props> = ({ symbol }) => {
             <div className={styles.card}>
               <h3>변동성 수축 현황</h3>
               <div className={styles.pullbackList}>
-                {analysis.vcp.pullbacks.map((p, i) => (
+                {analysis.vcp.pullbacks?.map((p, i) => (
                   <div key={i} className={styles.pullbackItem}>
                     T{i + 1} 눌림 깊이: {(p * 100).toFixed(1)}%
                   </div>

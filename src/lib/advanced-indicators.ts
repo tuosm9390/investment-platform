@@ -354,7 +354,7 @@ export function detectVSASignals(data: OHLCV[]): VSASignal[] {
  * Detect Volatility Contraction Pattern (VCP)
  */
 export function detectVCP(data: OHLCV[]) {
-  if (data.length < 250) return { isStage2: false, setups: [] };
+  if (data.length < 250) return { isStage2: false, isNarrowing: false, pullbacks: [], isVCP: false };
 
   const closes = data.map((d) => d.close);
   const sma50 = calculateSMA(closes, 50);

@@ -176,7 +176,7 @@ export default function SearchBar() {
                   key={`${item.symbol}-${item.name}`}
                   type="button"
                   className={`${styles.dropdownItem} ${index === activeIndex ? styles.dropdownItemActive : ''}`}
-                  onClick={() => handleSearch(item.name, item.symbol, item.type)}
+                  onClick={() => handleSearch(item.name, item.symbol)}
                   onMouseEnter={() => setActiveIndex(index)}
                 >
                   <span className={styles.suggestionIcon}>
@@ -212,7 +212,7 @@ export default function SearchBar() {
                     key={item}
                     type="button"
                     className={`${styles.dropdownItem} ${index === activeIndex ? styles.dropdownItemActive : ''}`}
-                    onClick={() => handleSearch(item, match?.symbol, match?.type)}
+                    onClick={() => handleSearch(item, match?.symbol)}
                     onMouseEnter={() => setActiveIndex(index)}
                   >
                     <span className={styles.suggestionIcon}><Clock size={14} /></span>
@@ -234,7 +234,7 @@ export default function SearchBar() {
                   key={`popular-${item.symbol}`}
                   type="button"
                   className={`${styles.dropdownItem} ${(showRecent ? recentSearches.length : 0) + index === activeIndex ? styles.dropdownItemActive : ''}`}
-                  onClick={() => handleSearch(item.name, item.symbol, item.type)}
+                  onClick={() => handleSearch(item.name, item.symbol)}
                 >
                   <span className={styles.suggestionIcon}>🪙</span>
                   <span className={styles.suggestionName}>{item.name}</span>
